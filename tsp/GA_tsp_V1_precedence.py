@@ -17,7 +17,7 @@ class City:
     def __repr__(self):
         return "(" + str(self.x) + "," + str(self.y) + ")"
 
-class Fitness999:
+class Fitness:
     def __init__(self, route, switchMat):
         self.route = route
         self.distance = 0
@@ -45,22 +45,7 @@ class Fitness999:
 
 ## Create our initial population
 
-
-
-# def createRoute(cityList):
-#     route = random.sample(cityList, len(cityList))
-#     return route
-
-
-
-# def initialPopulation(popSize, cityList):
-#     population = []
-#
-#     for i in range(0, popSize):
-#         population.append(createRoute(cityList))
-#     return population
-
-def initialPopulation999(popSize, switchMat):
+def initialPopulation(popSize, switchMat):
     population = []
     N, _ = switchMat.shape
 
@@ -70,19 +55,10 @@ def initialPopulation999(popSize, switchMat):
 
 ## Create the genetic algorithm
 
-
-
-
-# def rankRoutes(population):
-#     fitnessResults = {}
-#     for i in range(0, len(population)):
-#         fitnessResults[i] = Fitness(population[i]).routeFitness()
-#     return sorted(fitnessResults.items(), key=operator.itemgetter(1), reverse=True)
-
-def rankRoutes999(population, switchMat):
+def rankRoutes(population, switchMat):
     fitnessResults = {}
     for i in range(0, len(population)):
-        fitnessResults[i] = Fitness999(population[i], switchMat).routeFitness()
+        fitnessResults[i] = Fitness(population[i], switchMat).routeFitness()
     return sorted(fitnessResults.items(), key=operator.itemgetter(1), reverse=True)
 
 
@@ -126,15 +102,15 @@ def breed(parent1, parent2):
 
     for i in range(startGene, endGene):
         childP1.append(parent1[i])
-        child[i] = parent1[i]
+        child[i] = parent1[i]  # copy segment to the same position
 
     ptr = 0
     for item in parent2:
         if item not in childP1:
-            while ptr < len(parent1) and child[ptr] != None:
+            while ptr < len(parent1) and child[ptr] != None: # find the next None element
                 ptr += 1
 
-            child[ptr] = item
+            child[ptr] = item  # only copy the remaining gene to positions that are None
             ptr += 1
 
     return child
@@ -178,97 +154,55 @@ def mutatePopulation(population, mutationRate):
     return mutatedPop
 
 
-
-
-# def nextGeneration(currentGen, eliteSize, mutationRate):
-#     popRanked = rankRoutes(currentGen)
-#     selectionResults = selection(popRanked, eliteSize)
-#     matingpool = matingPool(currentGen, selectionResults)
-#     children = breedPopulation(matingpool, eliteSize)
-#     nextGeneration = mutatePopulation(children, mutationRate)
-#     return nextGeneration
-
-def nextGeneration999(currentGen, eliteSize, mutationRate, switchMat):
-    popRanked = rankRoutes999(currentGen, switchMat)
-    selectionResults = selection(popRanked, eliteSize)    # no change for the function of selection
-    matingpool = matingPool(currentGen, selectionResults) # no change for the function of matingPool
+def nextGeneration(currentGen, eliteSize, mutationRate, switchMat):
+    popRanked = rankRoutes(currentGen, switchMat)
+    selectionResults = selection(popRanked, eliteSize)
+    matingpool = matingPool(currentGen, selectionResults)
     children = breedPopulation(matingpool, eliteSize)
     nextGeneration = mutatePopulation(children, mutationRate)
     return nextGeneration
 
-
-
-# def geneticAlgorithm(population, popSize, eliteSize, mutationRate, generations):
-#     pop = initialPopulation(popSize, population)
-#     print("Initial distance: " + str(1 / rankRoutes(pop)[0][1]))
-#
-#     for i in range(0, generations):
-#         pop = nextGeneration(pop, eliteSize, mutationRate)
-#
-#     print("Final distance: " + str(1 / rankRoutes(pop)[0][1]))
-#     bestRouteIndex = rankRoutes(pop)[0][0]
-#     bestRoute = pop[bestRouteIndex]
-#     return bestRoute
-
-def geneticAlgorithm999(popSize, eliteSize, mutationRate, generations, switchMat):
-    pop = initialPopulation999(popSize, switchMat)
-    print("Initial distance: " + str(1 / rankRoutes999(pop, switchMat)[0][1]))
+## do GA without plotting the progress
+def geneticAlgorithm(popSize, eliteSize, mutationRate, generations, switchMat):
+    pop = initialPopulation(popSize, switchMat)
+    print("Initial distance: " + str(1 / rankRoutes(pop, switchMat)[0][1]))
 
     for i in range(0, generations):
-        pop = nextGeneration999(pop, eliteSize, mutationRate, switchMat)
+        pop = nextGeneration(pop, eliteSize, mutationRate, switchMat)
 
         if i % 10 == 0:
             print(str(i) + 'th generation finished')
 
-    print("Final distance: " + str(1 / rankRoutes999(pop, switchMat)[0][1]))
-    bestRouteIndex = rankRoutes999(pop, switchMat)[0][0]
+    print("Final distance: " + str(1 / rankRoutes(pop, switchMat)[0][1]))
+    bestRouteIndex = rankRoutes(pop, switchMat)[0][0]
     bestRoute = pop[bestRouteIndex]
     return bestRoute
 
-## Running the genetic algorithm
-
-
-cityList = []
-
-for i in range(0, 25):
-    cityList.append(City(x=int(random.random() * 200), y=int(random.random() * 200)))
-
-
-
-# geneticAlgorithm(population=cityList, popSize=100, eliteSize=20, mutationRate=0.01, generations=500)
-
-
-
-
 ## Plot the progress
-
-def geneticAlgorithmPlot999(popSize, eliteSize, mutationRate, generations, switchMat):
-    pop = initialPopulation999(popSize, switchMat)
+def geneticAlgorithmPlot(popSize, eliteSize, mutationRate, generations, switchMat):
+    pop = initialPopulation(popSize, switchMat)
     progress = []
-    progress.append(1 / rankRoutes999(pop, switchMat)[0][1])
+    progress.append(1 / rankRoutes(pop, switchMat)[0][1])
 
     for i in range(0, generations):
         if i % 10 == 0:
             print(str(i) + 'th generation finished')
-        pop = nextGeneration999(pop, eliteSize, mutationRate, switchMat)
-        progress.append(1 / rankRoutes999(pop, switchMat)[0][1])
+        pop = nextGeneration(pop, eliteSize, mutationRate, switchMat)
+        # ranked = rankRoutes(pop, switchMat)
+        # progress.append([1 / ranked[0][1], pop[ranked[0][0]]])
+        progress.append(1 / rankRoutes(pop, switchMat)[0][1])
 
-    print("Final distance: " + str(1 / rankRoutes999(pop, switchMat)[0][1]))
+
+
+    print("Final distance: " + str(1 / rankRoutes(pop, switchMat)[0][1]))
 
     plt.plot(progress)
     plt.ylabel('Distance')
     plt.xlabel('Generation')
     plt.show()
 
-# geneticAlgorithmPlot(population=cityList, popSize=100, eliteSize=20, mutationRate=0.01, generations=500)
-# geneticAlgorithmPlot(population=cityList, popSize=100, eliteSize=20, mutationRate=0.01, generations=500)
 
-'''
-For SmartSwitch, the given input is not city coordinates but a switch overhead matrix, we have to change the above code 
-to make it accept overhead matrix instead of a city list with coordinates
-'''
-
-# generate an overhead matrix based on the city list
+# generate an overhead matrix based on the list of cities
 def createMat(cityList):
     N = len(cityList)
     switchMat = np.zeros((N, N))
@@ -280,11 +214,25 @@ def createMat(cityList):
 
     return switchMat
 
+##################################################################################
+##################################################################################
+##################     workflow starts here                 ######################
 
-switchMat = createMat(cityList)
 
-# geneticAlgorithm999(popSize=100, eliteSize=20, mutationRate=0.01, generations=50, switchMat=switchMat)
-geneticAlgorithmPlot999(popSize=100, eliteSize=20, mutationRate=0.01, generations=500, switchMat=switchMat)
+## randomly generate a list of cities and generate a corresponding switch overhead matrix
+# cityList = []
+# N_city = 5  # number of cities
+# for i in range(0, N_city):
+#     cityList.append(City(x=int(random.random() * 200), y=int(random.random() * 200)))
+# switchMat = createMat(cityList)
+
+# load dataset
+data = pd.read_csv('dataset/dantzig42_d.txt', delim_whitespace=True, header=None)
+switchMat = data.values
+
+# geneticAlgorithmPlot(popSize=100, eliteSize=20, mutationRate=0.01, generations=500, switchMat=switchMat)
+geneticAlgorithm(popSize=100, eliteSize=20, mutationRate=0.01, generations=3000, switchMat=switchMat)
+
 
 
 
