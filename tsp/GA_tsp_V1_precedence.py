@@ -1,7 +1,12 @@
-import numpy as np, random, operator, pandas as pd, matplotlib.pyplot as plt
+import numpy as np, random, json, operator, pandas as pd, matplotlib.pyplot as plt
+from helper import covertPrecedence, generateChild, isValid
+
+'''
+please see this blog for reference: https://towardsdatascience.com/evolution-of-a-salesman-a-complete-genetic-algorithm-tutorial-for-python-6fe5d2b3ca35
+also this github page: https://github.com/ezstoltz/genetic-algorithm/blob/master/genetic_algorithm_TSP.ipynb
+'''
 
 ## Create necessary classes and functions
-
 
 class City:
     def __init__(self, x, y):
@@ -29,6 +34,9 @@ class Fitness:
             pathDistance = 0
             for i in range(0, len(self.route)):
 
+                if i == len(self.route) - 1:
+                    break
+
                 src = self.route[i]
                 dst = self.route[(i + 1) % len(self.route)]
 
@@ -53,6 +61,16 @@ def initialPopulation(popSize, switchMat):
         population.append(random.sample(range(N), N))
     return population
 
+def initialPopulation_withPC(popSize, switchMat, preceDic):
+    population = []
+    N, _ = switchMat.shape
+
+    for i in range(0, popSize):
+        sample = generateChild(range(N), preceDic)
+        population.append(sample)
+    return population
+
+
 ## Create the genetic algorithm
 
 def rankRoutes(population, switchMat):
@@ -64,19 +82,24 @@ def rankRoutes(population, switchMat):
 
 
 def selection(popRanked, eliteSize):
+    # selection process uses both Elitism and Fitness proportionate selection
     selectionResults = []
     df = pd.DataFrame(np.array(popRanked), columns=["Index", "Fitness"])
     df['cum_sum'] = df.Fitness.cumsum()
     df['cum_perc'] = 100 * df.cum_sum / df.Fitness.sum()
 
+    # use Elitism to select
     for i in range(0, eliteSize):
         selectionResults.append(popRanked[i][0])
+
+    # use Fitness proportionate selection to select the rest
     for i in range(0, len(popRanked) - eliteSize):
         pick = 100 * random.random()
         for i in range(0, len(popRanked)):
             if pick <= df.iat[i, 3]:
                 selectionResults.append(popRanked[i][0])
                 break
+
     return selectionResults
 
 
@@ -88,6 +111,7 @@ def matingPool(population, selectionResults):
         index = selectionResults[i]
         matingpool.append(population[index])
     return matingpool
+
 
 
 def breed(parent1, parent2):
@@ -117,16 +141,44 @@ def breed(parent1, parent2):
 
 
 
-def breedPopulation(matingpool, eliteSize):
+def breed_withPC(parent, preceDic):
+
+    ### please refer to this paper: https://link.springer.com/content/pdf/10.1007/s10845-009-0296-4.pdf
+    ### we use the crossover proposed in the above paper
+
+    N = len(parent)
+    index = random.sample(range(N), 2)
+    low, high = min(index), max(index)
+
+    ### randomly decide which part to be changed
+    ### point = 0 -> [0: low]
+    ### point = 1 -> [low: high + 1]
+    ### point = 2 -> [high + 1, N]
+    point = random.sample([0,1,2],1)[0]
+
+    if point == 0:
+        return generateChild(parent[0: low], preceDic) + parent[low: N]
+    elif point == 1:
+        return parent[0: low] + generateChild(parent[low: high + 1], preceDic) + parent[high + 1: N]
+    elif point == 2:
+        return parent[0: high + 1] + generateChild(parent[high + 1: N], preceDic)
+
+
+    # toChange = [parent[0: low], parent[low: high + 1], parent[high + 1: N]][point]
+
+
+
+def breedPopulation_withPC(matingpool, eliteSize, preceDic):
     children = []
     length = len(matingpool) - eliteSize
-    pool = random.sample(matingpool, len(matingpool))
+    # pool = random.sample(matingpool, len(matingpool))
 
     for i in range(0, eliteSize):
         children.append(matingpool[i])
 
     for i in range(0, length):
-        child = breed(pool[i], pool[len(matingpool) - i - 1])
+        # child = breed(pool[i], pool[len(matingpool) - i - 1])
+        child = breed_withPC(matingpool[i + eliteSize], preceDic)
         children.append(child)
     return children
 
@@ -154,21 +206,23 @@ def mutatePopulation(population, mutationRate):
     return mutatedPop
 
 
-def nextGeneration(currentGen, eliteSize, mutationRate, switchMat):
+def nextGeneration_withPC(currentGen, eliteSize, mutationRate, switchMat, preceDic):
     popRanked = rankRoutes(currentGen, switchMat)
     selectionResults = selection(popRanked, eliteSize)
     matingpool = matingPool(currentGen, selectionResults)
-    children = breedPopulation(matingpool, eliteSize)
-    nextGeneration = mutatePopulation(children, mutationRate)
+    children = breedPopulation_withPC(matingpool, eliteSize, preceDic)
+    # print("BeforeMutation: ", isValid(children, preceDic))
+    # nextGeneration = mutatePopulation(children, mutationRate)
+    nextGeneration = children
     return nextGeneration
 
 ## do GA without plotting the progress
-def geneticAlgorithm(popSize, eliteSize, mutationRate, generations, switchMat):
-    pop = initialPopulation(popSize, switchMat)
+def geneticAlgorithm(popSize, eliteSize, mutationRate, generations, switchMat, preceDic):
+    pop = initialPopulation_withPC(popSize, switchMat, preceDic)
     print("Initial distance: " + str(1 / rankRoutes(pop, switchMat)[0][1]))
 
     for i in range(0, generations):
-        pop = nextGeneration(pop, eliteSize, mutationRate, switchMat)
+        pop = nextGeneration_withPC(pop, eliteSize, mutationRate, switchMat, preceDic)
 
         if i % 10 == 0:
             print(str(i) + 'th generation finished')
@@ -179,15 +233,16 @@ def geneticAlgorithm(popSize, eliteSize, mutationRate, generations, switchMat):
     return bestRoute
 
 ## Plot the progress
-def geneticAlgorithmPlot(popSize, eliteSize, mutationRate, generations, switchMat):
-    pop = initialPopulation(popSize, switchMat)
+def geneticAlgorithmPlot(popSize, eliteSize, mutationRate, generations, switchMat, preceDic):
+    pop = initialPopulation_withPC(popSize, switchMat, preceDic)
     progress = []
     progress.append(1 / rankRoutes(pop, switchMat)[0][1])
 
     for i in range(0, generations):
         if i % 10 == 0:
             print(str(i) + 'th generation finished')
-        pop = nextGeneration(pop, eliteSize, mutationRate, switchMat)
+        pop = nextGeneration_withPC(pop, eliteSize, mutationRate, switchMat, preceDic)
+        # print("Plot: ",isValid(pop, preceDic))
         # ranked = rankRoutes(pop, switchMat)
         # progress.append([1 / ranked[0][1], pop[ranked[0][0]]])
         progress.append(1 / rankRoutes(pop, switchMat)[0][1])
@@ -195,6 +250,9 @@ def geneticAlgorithmPlot(popSize, eliteSize, mutationRate, generations, switchMa
 
 
     print("Final distance: " + str(1 / rankRoutes(pop, switchMat)[0][1]))
+    bestRouteIndex = rankRoutes(pop, switchMat)[0][0]
+    bestRoute = pop[bestRouteIndex]
+    return bestRoute
 
     plt.plot(progress)
     plt.ylabel('Distance')
@@ -219,19 +277,33 @@ def createMat(cityList):
 ##################     workflow starts here                 ######################
 
 
-## randomly generate a list of cities and generate a corresponding switch overhead matrix
+### randomly generate a list of cities and generate a corresponding switch overhead matrix
 # cityList = []
 # N_city = 5  # number of cities
 # for i in range(0, N_city):
 #     cityList.append(City(x=int(random.random() * 200), y=int(random.random() * 200)))
 # switchMat = createMat(cityList)
 
-# load dataset
-data = pd.read_csv('dataset/dantzig42_d.txt', delim_whitespace=True, header=None)
-switchMat = data.values
+
+
+with open('json_data.json') as json_file:
+    data = json.load(json_file)
+
+
+graph = data['Example']
+
+precedenceList = graph[2]['Precedence']
+preceDic = covertPrecedence(precedenceList)
+
+switchMat = np.array(graph[2]['Matrix'])
+node_num = len(switchMat)
+
+
+
 
 # geneticAlgorithmPlot(popSize=100, eliteSize=20, mutationRate=0.01, generations=500, switchMat=switchMat)
-geneticAlgorithm(popSize=100, eliteSize=20, mutationRate=0.01, generations=3000, switchMat=switchMat)
+optimal = geneticAlgorithmPlot(popSize=100, eliteSize=20, mutationRate=0.01, generations=90, switchMat=switchMat, preceDic=preceDic)
+print([e + 1 for e in optimal])
 
 
 

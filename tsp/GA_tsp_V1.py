@@ -215,14 +215,17 @@ def createMat(cityList):
 ##################     workflow starts here                 ######################
 
 
-# randomly generate a list of cities and generate a corresponding switch overhead matrix
-cityList = []
-N_city = 25  # number of cities
-for i in range(0, N_city):
-    cityList.append(City(x=int(random.random() * 200), y=int(random.random() * 200)))
+# ### randomly generate a list of cities and generate a corresponding switch overhead matrix
+# cityList = []
+# N_city = 25  # number of cities
+# for i in range(0, N_city):
+#     cityList.append(City(x=int(random.random() * 200), y=int(random.random() * 200)))
+#
+# switchMat = createMat(cityList)
 
-switchMat = createMat(cityList)
-
+### load dataset
+data = pd.read_csv('dataset/dantzig42_d.txt', delim_whitespace=True, header=None)
+switchMat = data.values
 
 geneticAlgorithmPlot(popSize=100, eliteSize=20, mutationRate=0.01, generations=500, switchMat=switchMat)
 
