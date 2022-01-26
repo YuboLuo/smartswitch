@@ -30,8 +30,24 @@ def isValid(inputList, preceDic):
 
     return result
 
+def covertConditional(conditionalList):
+    ### convert conditional constraint from list to dict
+
+    ### decrease all index by 1 because array starts from index = 0 in python, while the original graph in the paper starts from index = 1
+    for i in range(len(conditionalList)):
+        conditionalList[i][0] -= 1
+        conditionalList[i][1] -= 1
+
+    ### from list to dict
+    condiDic = defaultdict(list)
+    for triple in conditionalList:
+        condiDic[triple[0]].append([triple[1], triple[2]])
+
+    return condiDic
+
+
 def covertPrecedence(precedenceList):
-    ### convert the precedence relation from list to dict
+    ### convert precedence constraint from list to dict
 
     ### decrease all index by 1 because array starts from index = 0 in python, while the original graph in the paper starts from index = 1
     for i in range(len(precedenceList)):
