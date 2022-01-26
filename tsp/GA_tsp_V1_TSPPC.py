@@ -246,12 +246,14 @@ def geneticAlgorithmPlot(popSize, eliteSize, mutationRate, generations, switchMa
     print("Final distance: " + str(1 / rankRoutes(pop, switchMat)[0][1]))
     bestRouteIndex = rankRoutes(pop, switchMat)[0][0]
     bestRoute = pop[bestRouteIndex]
-    return bestRoute
+
 
     plt.plot(progress)
     plt.ylabel('Distance')
     plt.xlabel('Generation')
     plt.show()
+    return bestRoute
+
 
 
 # generate an overhead matrix based on the list of cities
@@ -286,10 +288,12 @@ with open('json_data.json') as json_file:
 
 graph = data['Example']
 
-precedenceList = graph[2]['PrecedenceConstraint']
+instance = 2
+
+precedenceList = graph[instance]['PrecedenceConstraint']
 preceDic = covertPrecedence(precedenceList)
 
-switchMat = np.array(graph[2]['Matrix'])
+switchMat = np.array(graph[instance]['Matrix'])
 node_num = len(switchMat)
 
 

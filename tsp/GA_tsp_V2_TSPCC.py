@@ -1,7 +1,7 @@
 import copy
 
 import numpy as np, random, json, operator, collections, pandas as pd, matplotlib.pyplot as plt
-from helper import covertPrecedence, generateChild, covertConditional
+from helper import covertPrecedence, generateChild, covertConditional, findAllTrips
 
 
 '''
@@ -47,7 +47,16 @@ def Fitness(route, switchMat):
 
     return fitness
 
+def Fitness_TSPCC(route, switchMat, condiDic):
 
+    allTrips = findAllTrips(route, condiDic)
+
+    distance = 0
+    for trip in allTrips:
+        distance = distance + (1 / Fitness(trip[0], switchMat)) * trip[1]  # trip[0] is actual trip route, trip[1] is probability
+
+    fitness = 1 / float(distance)
+    return fitness
 
 ## Create our initial population
 
@@ -71,10 +80,10 @@ def initialPopulation_withPC(popSize, switchMat, preceDic):
 
 ## Create the genetic algorithm
 
-def rankRoutes(population, switchMat):
+def rankRoutes(population, switchMat, condiDic):
     fitnessResults = {}
     for i in range(0, len(population)):
-        fitnessResults[i] = Fitness(population[i], switchMat)
+        fitnessResults[i] = Fitness_TSPCC(population[i], switchMat, condiDic)
     return sorted(fitnessResults.items(), key=operator.itemgetter(1), reverse=True)
 
 
@@ -204,8 +213,8 @@ def mutatePopulation(population, mutationRate):
     return mutatedPop
 
 
-def nextGeneration_withPC(currentGen, eliteSize, mutationRate, switchMat, preceDic):
-    popRanked = rankRoutes(currentGen, switchMat)
+def nextGeneration_withPC(currentGen, eliteSize, mutationRate, switchMat, preceDic, condiDic):
+    popRanked = rankRoutes(currentGen, switchMat, condiDic)
     selectionResults = selection(popRanked, eliteSize)
     matingpool = matingPool(currentGen, selectionResults)
     children = breedPopulation_withPC(matingpool, eliteSize, preceDic)
@@ -231,31 +240,33 @@ def geneticAlgorithm(popSize, eliteSize, mutationRate, generations, switchMat, p
     return bestRoute
 
 ## Plot the progress
-def geneticAlgorithmPlot(popSize, eliteSize, mutationRate, generations, switchMat, preceDic):
+def geneticAlgorithmPlot(popSize, eliteSize, mutationRate, generations, switchMat, preceDic, condiDic):
     pop = initialPopulation_withPC(popSize, switchMat, preceDic)
     progress = []
-    progress.append(1 / rankRoutes(pop, switchMat)[0][1])
+    progress.append(1 / rankRoutes(pop, switchMat, condiDic)[0][1])
 
     for i in range(0, generations):
         if i % 10 == 0:
             print(str(i) + 'th generation finished')
-        pop = nextGeneration_withPC(pop, eliteSize, mutationRate, switchMat, preceDic)
+        pop = nextGeneration_withPC(pop, eliteSize, mutationRate, switchMat, preceDic, condiDic)
         # print("Plot: ",isValid(pop, preceDic))
         # ranked = rankRoutes(pop, switchMat)
         # progress.append([1 / ranked[0][1], pop[ranked[0][0]]])
-        progress.append(1 / rankRoutes(pop, switchMat)[0][1])
+        progress.append(1 / rankRoutes(pop, switchMat, condiDic)[0][1])
 
 
 
-    print("Final distance: " + str(1 / rankRoutes(pop, switchMat)[0][1]))
-    bestRouteIndex = rankRoutes(pop, switchMat)[0][0]
+    print("Final distance: " + str(1 / rankRoutes(pop, switchMat, condiDic)[0][1]))
+    bestRouteIndex = rankRoutes(pop, switchMat, condiDic)[0][0]
     bestRoute = pop[bestRouteIndex]
-    return bestRoute
+
 
     plt.plot(progress)
     plt.ylabel('Distance')
     plt.xlabel('Generation')
     plt.show()
+
+    return bestRoute
 
 
 # generate an overhead matrix based on the list of cities
@@ -301,77 +312,12 @@ switchMat = np.array(graph[instance]['Matrix'])
 node_num = len(switchMat)
 
 
-def Fitness_TSPCC(route, switchMat, condiDic):
 
-    allPath = []
-    allTrips = []
-    route = collections.deque(route)
-
-    def removeDependantTask(route, task):
-        ### if one task is skipped, we should remove this task and all other tasks that depend on it
-
-        ### first check if this task exists, it might have already been removed before
-        ### because one task may depend on multiple tasks
-        if task in route:
-            route.remove(task)
-
-        ### remove in a recursive way
-        if task in condiDic:
-            for arc in condiDic[task]:
-                removeDependantTask(route, arc[0])
-
-
-
-    def DFS(subroute, prob, distance, trip):
-
-        route_local = copy.deepcopy(subroute)
-        task = route_local.popleft()
-
-        trip_local = copy.deepcopy(trip)
-        trip_local.append(task)
-
-        ### finished iterating this subroute
-        ### the final cost should be added to the total distance
-        if len(route_local) == 0:
-            allPath.append(distance * prob)  # weighted distance for each possible path
-            allTrips.append([trip_local, prob])
-            return
-
-
-        if task in condiDic:
-            # if task has at least one outgoing arc
-            n_arc = len(condiDic[task]) # one node may have multiple outgoing conditional arcs
-            prob /= n_arc
-
-            for arc in condiDic[task]:
-
-                DFS(route_local, prob * arc[1], distance + switchMat[task][route_local[0]], trip_local) # when the dependant task is not skipped
-                if arc[1] < 1: # conditional execution, a new branch is created where the dependant task is skipped
-
-                    removeDependantTask(route_local, arc[0])
-                    if len(route_local) == 0:
-                        allPath.append(distance * prob * (1 - arc[1]))
-                        allTrips.append([trip_local, prob * (1 - arc[1])])
-                        return
-
-                    DFS(route_local, prob * (1 - arc[1]), distance + switchMat[task][route_local[0]], trip_local)
-
-        else: # task has no arc
-            DFS(route_local, prob, distance + switchMat[task][route_local[0]], trip_local)
-
-    DFS(route, 1, 0, [])
-
-    distance = float(sum(allPath))
-    fitness = 1 / distance
-
-    return distance, allTrips
-
-a,b = Fitness_TSPCC([0,2,3,1,5,4,6], switchMat, condiDic)
 
 
 # geneticAlgorithmPlot(popSize=100, eliteSize=20, mutationRate=0.01, generations=500, switchMat=switchMat)
-# optimal = geneticAlgorithmPlot(popSize=100, eliteSize=20, mutationRate=0.01, generations=90, switchMat=switchMat, preceDic=preceDic)
-# print([e + 1 for e in optimal])
+optimal = geneticAlgorithmPlot(popSize=100, eliteSize=20, mutationRate=0.01, generations=30, switchMat=switchMat, preceDic=preceDic, condiDic=condiDic)
+print([e + 1 for e in optimal])
 
 
 
