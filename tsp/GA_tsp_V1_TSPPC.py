@@ -252,7 +252,7 @@ def geneticAlgorithmPlot(popSize, eliteSize, mutationRate, generations, switchMa
     plt.ylabel('Distance')
     plt.xlabel('Generation')
     plt.show()
-    return bestRoute
+    return [e - 1 for e in bestRoute]
 
 
 
@@ -288,7 +288,7 @@ with open('json_data.json') as json_file:
 
 graph = data['Example']
 
-instance = 2
+instance = 0
 
 precedenceList = graph[instance]['PrecedenceConstraint']
 preceDic = covertPrecedence(precedenceList)
@@ -300,7 +300,7 @@ node_num = len(switchMat)
 
 
 # geneticAlgorithmPlot(popSize=100, eliteSize=20, mutationRate=0.01, generations=500, switchMat=switchMat)
-optimal = geneticAlgorithmPlot(popSize=100, eliteSize=20, mutationRate=0.01, generations=90, switchMat=switchMat, preceDic=preceDic)
+optimal = geneticAlgorithmPlot(popSize=100, eliteSize=20, mutationRate=0.01, generations=40, switchMat=switchMat, preceDic=preceDic)
 print([e + 1 for e in optimal])
 
 

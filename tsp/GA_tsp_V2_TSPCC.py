@@ -266,7 +266,7 @@ def geneticAlgorithmPlot(popSize, eliteSize, mutationRate, generations, switchMa
     plt.xlabel('Generation')
     plt.show()
 
-    return bestRoute
+    return [e - 1 for e in bestRoute]
 
 
 # generate an overhead matrix based on the list of cities

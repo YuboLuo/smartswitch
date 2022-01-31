@@ -46,7 +46,10 @@ def covertConditional(conditionalList):
     ### from list to dict
     condiDic = defaultdict(list)
     for triple in conditionalList:
-        condiDic[triple[0]].append([triple[1], triple[2]])
+        if len(triple) == 3:
+            condiDic[triple[0]].append([triple[1], triple[2]])
+        else:
+            condiDic[triple[0]].append([triple[1], 1])
 
     return condiDic
 
