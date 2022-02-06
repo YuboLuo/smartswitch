@@ -1,7 +1,7 @@
 import copy
 
 import numpy as np, random, json, operator, collections, pandas as pd, matplotlib.pyplot as plt
-from helper import covertPrecedence, generateChild, covertConditional, findAllTrips
+from helper import covertPrecedence, generateChild, covertConditional, findAllTrips, readSOP
 
 
 '''
@@ -15,19 +15,19 @@ we added extra constraints and develop our code based on the above implementatio
 
 ## Create necessary classes and functions
 
-class City:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    def distance(self, city):
-        xDis = abs(self.x - city.x)
-        yDis = abs(self.y - city.y)
-        distance = np.sqrt((xDis ** 2) + (yDis ** 2))
-        return distance
-
-    def __repr__(self):
-        return "(" + str(self.x) + "," + str(self.y) + ")"
+# class City:
+#     def __init__(self, x, y):
+#         self.x = x
+#         self.y = y
+#
+#     def distance(self, city):
+#         xDis = abs(self.x - city.x)
+#         yDis = abs(self.y - city.y)
+#         distance = np.sqrt((xDis ** 2) + (yDis ** 2))
+#         return distance
+#
+#     def __repr__(self):
+#         return "(" + str(self.x) + "," + str(self.y) + ")"
 
 
 def Fitness(route, switchMat):
@@ -283,7 +283,7 @@ def createMat(cityList):
 
 ##################################################################################
 ##################################################################################
-##################     workflow starts here                 ######################
+##################          workflow starts here            ######################
 
 
 ### randomly generate a list of cities and generate a corresponding switch overhead matrix
@@ -294,30 +294,31 @@ def createMat(cityList):
 # switchMat = createMat(cityList)
 
 
+######################################################################################
+### use the dataset from the paper
 
-with open('json_data.json') as json_file:
-    data = json.load(json_file)
-
-
-graph = data['Example']
-
-instance = 0
-precedenceList = graph[instance]['PrecedenceConstraint']
-preceDic = covertPrecedence(precedenceList)
-
-conditionalList = graph[instance]['ConditionalConstraint']
-condiDic = covertConditional(conditionalList)
-
-switchMat = np.array(graph[instance]['Matrix'])
-node_num = len(switchMat)
+# with open('json_data.json') as json_file:
+#     data = json.load(json_file)
+#
+# graph = data['Example']
+#
+# instance = 0
+# precedenceList = graph[instance]['PrecedenceConstraint']
+# preceDic = covertPrecedence(precedenceList)
+#
+# conditionalList = graph[instance]['ConditionalConstraint']
+# condiDic = covertConditional(conditionalList)
+#
+# switchMat = np.array(graph[instance]['Matrix'])
+# node_num = len(switchMat)
 
 
 
 
 
 # geneticAlgorithmPlot(popSize=100, eliteSize=20, mutationRate=0.01, generations=500, switchMat=switchMat)
-optimal = geneticAlgorithmPlot(popSize=100, eliteSize=20, mutationRate=0.01, generations=30, switchMat=switchMat, preceDic=preceDic, condiDic=condiDic)
-print([e + 1 for e in optimal])
+# optimal = geneticAlgorithmPlot(popSize=100, eliteSize=20, mutationRate=0.01, generations=30, switchMat=switchMat, preceDic=preceDic, condiDic=condiDic)
+# print([e + 1 for e in optimal])
 
 
 

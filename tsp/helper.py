@@ -2,30 +2,57 @@ import json
 from collections import defaultdict,deque
 import copy
 import random
+import pandas as pd
+
+
+def isValidIndiviual(individual, preceDic):
+    '''
+    check if the individual satisfies the precedence constraint defined in preceDic
+    :param individual: one individual
+    :return: True or False
+    '''
+
+    Flag = True
+
+    for key in preceDic.keys():
+        index_key = individual.index(key)
+
+        for value in preceDic[key]:
+            if individual.index(value) <= index_key:
+                Flag = False
+                break
+
+        if Flag == False:
+            break
+
+    return Flag
+
+
 
 
 def isValid(inputList, preceDic):
     '''
     check if there exists any individual in inputList that does not satisfy the precedence constraint
     return a list of index of invalid instances
+    :param inputList is a list of individuals
     '''
 
     result = []
     for idx, instance in enumerate(inputList):
-        Flag = True
+        # Flag = True
+        #
+        # for key in preceDic.keys():
+        #     index_key = instance.index(key)
+        #
+        #     for value in preceDic[key]:
+        #         if instance.index(value) <= index_key:
+        #             Flag = False
+        #             break
+        #
+        #     if Flag == False:
+        #         break
 
-        for key in preceDic.keys():
-            index_key = instance.index(key)
-
-            for value in preceDic[key]:
-                if instance.index(value) <= index_key:
-                    Flag = False
-                    break
-
-            if Flag == False:
-                break
-
-        if Flag == False:
+        if isValidIndiviual(instance, preceDic) == False:
             result.append(idx)
 
     return result
@@ -54,17 +81,19 @@ def covertConditional(conditionalList):
     return condiDic
 
 
-def covertPrecedence(precedenceList):
+def covertPrecedence(precedenceList, Type = 0):
     '''
     convert precedence constraint from list to dict
     :param precedenceList: the original PrecedenceConstraint read from json file, it is a List
+    :param Type: whether use data from the paper (index starts from 1) or TSPLIB(SOP) dataset (index starts from 0)
     :return: a dictionary
     '''
 
-    ### decrease all index by 1 because array starts from index = 0 in python, while the original graph in the paper starts from index = 1
-    for i in range(len(precedenceList)):
-        precedenceList[i][0] -= 1
-        precedenceList[i][1] -= 1
+    if Type == 0: # use data from the paper
+        ### decrease all index by 1 because array starts from index = 0 in python, while the original graph in the paper starts from index = 1
+        for i in range(len(precedenceList)):
+            precedenceList[i][0] -= 1
+            precedenceList[i][1] -= 1
 
     ### from list to dict
     preceDic = defaultdict(set)
@@ -219,6 +248,38 @@ def findAllTrips(route, condiDic):
 
     return allTrips
 
+
+def readSOP(filename):
+    '''
+    TSPLIB has datasets for various TSP variants, http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/
+    We use Sequential Ordering Problem (SOP) dataset which has precedence constraints
+    :return:
+    '''
+
+    ### we skip the first 8 lines and the last line of the file
+    data = pd.read_csv(filename, delim_whitespace=True, skiprows=[i for i in range(8)], header=None)  # skip first 8 lines
+    data = data.values[:-1]  # skip the last line
+
+    '''
+    suppose the city number is n, the data is a n*n matrix
+    if (i,j) == -1, it means that j must be visited before i
+                    if j must be visited before i, we will never need the travel cost from city i to city j
+                    so it just uses this (i,j) to mark the precedence constraint 
+    if (i,j) != -1, its value means the travel cost from city i to city j
+    '''
+
+    precedence = []
+    n = len(data)
+    for i in range(n):
+        for j in range(n):
+            if type(data[i][j]) != float:
+                data[i][j] = float(data[i][j])
+
+            if data[i][j] == -1:
+                precedence.append([j, i])
+                data[i][j] = float('inf')  # use inf to mark the precedence constraint
+
+    return precedence, data
 
 
 

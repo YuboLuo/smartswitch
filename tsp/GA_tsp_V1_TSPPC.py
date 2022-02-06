@@ -1,5 +1,7 @@
+import copy
+
 import numpy as np, random, json, operator, pandas as pd, matplotlib.pyplot as plt
-from helper import covertPrecedence, generateChild, isValid
+from helper import covertPrecedence, generateChild, isValid, readSOP, isValidIndiviual
 
 '''
 V1: TSP with Precedence Constraint (TSPPC)
@@ -12,19 +14,19 @@ we added extra constraints and develop our code based on the above implementatio
 
 ## Create necessary classes and functions
 
-class City:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    def distance(self, city):
-        xDis = abs(self.x - city.x)
-        yDis = abs(self.y - city.y)
-        distance = np.sqrt((xDis ** 2) + (yDis ** 2))
-        return distance
-
-    def __repr__(self):
-        return "(" + str(self.x) + "," + str(self.y) + ")"
+# class City:
+#     def __init__(self, x, y):
+#         self.x = x
+#         self.y = y
+#
+#     def distance(self, city):
+#         xDis = abs(self.x - city.x)
+#         yDis = abs(self.y - city.y)
+#         distance = np.sqrt((xDis ** 2) + (yDis ** 2))
+#         return distance
+#
+#     def __repr__(self):
+#         return "(" + str(self.x) + "," + str(self.y) + ")"
 
 
 def Fitness(route, switchMat):
@@ -177,25 +179,51 @@ def breedPopulation_TSPPC(matingpool, eliteSize, preceDic):
     return children
 
 
-def mutate(individual, mutationRate):
-    for swapped in range(len(individual)):
-        if (random.random() < mutationRate):
-            swapWith = int(random.random() * len(individual))
 
-            city1 = individual[swapped]
-            city2 = individual[swapWith]
-
-            individual[swapped] = city2
-            individual[swapWith] = city1
-    return individual
+def mutate_TSPPC(individual, mutationRate, preceDic):
 
 
+    if random.random() < mutationRate:
 
-def mutatePopulation(population, mutationRate):
+        N = len(individual)
+        chosen = int(random.random() * N)  # randomly choose a gene
+        swap1 = ((chosen + N) - 1) % N  # immediate predecessor, if chosen = 0, its predecessor is N - 1
+        swap2 = ((chosen + N) + 1) % N  # immediate successor, if chosen = N - 1, its successor is 0
+
+        new = copy.deepcopy(individual)
+        new[chosen], new[swap1] = new[swap1], new[chosen]  # do swap1
+        if isValidIndiviual(new, preceDic):
+            return new
+        else:
+            new[chosen], new[swap1] = new[swap1], new[chosen] # revert swap1
+            new[chosen], new[swap2] = new[swap2], new[chosen] # do swap2
+            if isValidIndiviual(new, preceDic):
+                return new
+            else:
+                return individual
+
+    else:
+        return individual
+
+
+    # for swapped in range(len(individual)):
+    #     if (random.random() < mutationRate):
+    #         swapWith = int(random.random() * len(individual))
+    #
+    #         city1 = individual[swapped]
+    #         city2 = individual[swapWith]
+    #
+    #         individual[swapped] = city2
+    #         individual[swapWith] = city1
+    # return individual
+
+
+
+def mutatePopulation(population, mutationRate, preceDic):
     mutatedPop = []
 
     for ind in range(0, len(population)):
-        mutatedInd = mutate(population[ind], mutationRate)
+        mutatedInd = mutate_TSPPC(population[ind], mutationRate, preceDic)
         mutatedPop.append(mutatedInd)
     return mutatedPop
 
@@ -205,9 +233,8 @@ def nextGeneration_TSPPC(currentGen, eliteSize, mutationRate, switchMat, preceDi
     selectionResults = selection(popRanked, eliteSize)
     matingpool = matingPool(currentGen, selectionResults)
     children = breedPopulation_TSPPC(matingpool, eliteSize, preceDic)
-    # print("BeforeMutation: ", isValid(children, preceDic))
-    # nextGeneration = mutatePopulation(children, mutationRate)
-    nextGeneration = children
+    nextGeneration = mutatePopulation(children, mutationRate, preceDic)
+    # nextGeneration = children
     return nextGeneration
 
 ## do GA without plotting the progress
@@ -252,7 +279,7 @@ def geneticAlgorithmPlot(popSize, eliteSize, mutationRate, generations, switchMa
     plt.ylabel('Distance')
     plt.xlabel('Generation')
     plt.show()
-    return [e - 1 for e in bestRoute]
+    return bestRoute
 
 
 
@@ -281,14 +308,15 @@ def createMat(cityList):
 # switchMat = createMat(cityList)
 
 
+######################################################################################
+### use the dataset from the paper
 
 with open('json_data.json') as json_file:
     data = json.load(json_file)
 
-
 graph = data['Example']
 
-instance = 0
+instance = 3
 
 precedenceList = graph[instance]['PrecedenceConstraint']
 preceDic = covertPrecedence(precedenceList)
@@ -296,12 +324,33 @@ preceDic = covertPrecedence(precedenceList)
 switchMat = np.array(graph[instance]['Matrix'])
 node_num = len(switchMat)
 
+print('BestRoute_Priority_based = ', 1 / Fitness([e - 1 for e in graph[instance]['BestRoute_Priority_based']], switchMat))
+print('BestRoute_TS_based = ', 1 / Fitness([e - 1 for e in graph[instance]['BestRoute_TS_based']], switchMat))
 
+######################################################################################
+### use the SOP dataset
+# datasetFile = 'dataset/sop/ESC25.sop'
+# precedence, switchMat = readSOP(datasetFile)
+# preceDic = covertPrecedence(precedence, Type = 1)
+######################################################################################
+
+param = { 'popSize': 20,
+          'eliteSize': 3,
+          'mutationRate': 0.05,
+          'generations': 1000}
 
 
 # geneticAlgorithmPlot(popSize=100, eliteSize=20, mutationRate=0.01, generations=500, switchMat=switchMat)
-optimal = geneticAlgorithmPlot(popSize=100, eliteSize=20, mutationRate=0.01, generations=40, switchMat=switchMat, preceDic=preceDic)
+optimal = geneticAlgorithmPlot( popSize = param['popSize'],
+                                eliteSize = param['eliteSize'],
+                                mutationRate = param['mutationRate'],
+                                generations = param['generations'],
+                                switchMat = switchMat,
+                                preceDic = preceDic)
+print(param)
 print([e + 1 for e in optimal])
+# print(datasetFile.split('/')[-1], '\n', [e + 1 for e in optimal])
+
 
 
 
