@@ -260,7 +260,7 @@ def geneticAlgorithmPlot(popSize, eliteSize, mutationRate, generations, switchMa
     progress.append(1 / rankRoutes(pop, switchMat)[0][1])
 
     for i in range(0, generations):
-        if i % 10 == 0:
+        if i % 100 == 0:
             print(str(i) + 'th generation finished')
         pop = nextGeneration_TSPPC(pop, eliteSize, mutationRate, switchMat, preceDic)
         # print("Plot: ",isValid(pop, preceDic))
@@ -329,7 +329,7 @@ print('BestRoute_TS_based = ', 1 / Fitness([e - 1 for e in graph[instance]['Best
 
 ######################################################################################
 ### use the SOP dataset
-# datasetFile = 'dataset/sop/ESC25.sop'
+# datasetFile = 'dataset/sop/ry48p.1.sop'    # br17.10
 # precedence, switchMat = readSOP(datasetFile)
 # preceDic = covertPrecedence(precedence, Type = 1)
 ######################################################################################
@@ -337,7 +337,7 @@ print('BestRoute_TS_based = ', 1 / Fitness([e - 1 for e in graph[instance]['Best
 param = { 'popSize': 20,
           'eliteSize': 3,
           'mutationRate': 0.05,
-          'generations': 1000}
+          'generations': 10}
 
 
 # geneticAlgorithmPlot(popSize=100, eliteSize=20, mutationRate=0.01, generations=500, switchMat=switchMat)
@@ -348,7 +348,7 @@ optimal = geneticAlgorithmPlot( popSize = param['popSize'],
                                 switchMat = switchMat,
                                 preceDic = preceDic)
 print(param)
-print([e + 1 for e in optimal])
+# print([e + 1 for e in optimal])
 # print(datasetFile.split('/')[-1], '\n', [e + 1 for e in optimal])
 
 

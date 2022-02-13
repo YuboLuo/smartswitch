@@ -7,8 +7,8 @@
       "NodeNumber": 7,
       "BestRoute_Priority_based": [3,5,7,1,4,2,6],
       "BestRoute_TS_based": [3,5,7,1,4,2,6],
-      "Comment1": "Index starts from 1 in the paper. You have to decrease all indexes by 1 when using them. This applies to all data in this json file.",
-      "Comment2": "Matrix is the pair-wise travel cost for the entire city list."
+      "Comment1": "Index starts from 1 in the paper (Genetic algorithm approach for precedence-constrained sequencing problems - by YoungSu Yun et al., 2011). You have to decrease all indexes by 1 when using them. This applies to all data in this json file.",
+      "Comment2": "Matrix is the pair-wise travel cost for the entire city list. BestRoute_Priority_based and BestRoute_TS_based (proposed) are the reported best routes in the paper."
     },
     {
       "PrecedenceConstraint": [[1,4],[1,5],[2,4],[2,5],[3,4],[3,5],[4,6],[4,7],[4,8],[5,7],[5,8],[6,10],[6,12],[7,6],[7,12],[8,9],[9,12],[9,13],[10,15],[10,17],[11,10],[12,11],[12,13],[12,16],[12,17],
