@@ -11,33 +11,41 @@
 
 
 
-import tensorflow as tf  ###
+import tensorflow as tf
+from keras import backend as F
 
+# last three datasets have only 5 layers
 datasets = ['mnist', 'fmnist', 'cifar10', 'gtsrb', 'svhn', 'esc10', 'obs', 'gsc', 'hhar', 'us8k']
 
 
 
-name_dataset = datasets[7]
+
+name_dataset = datasets[6]
 
 with tf.Session() as sess:
 
     saver = tf.train.import_meta_graph('../../WeightSeparation/{}/{}.meta'.format(name_dataset,name_dataset))  # the downloaded repository is in WeightSeparation folder
     saver.restore(sess, '../../WeightSeparation/{}/{}'.format(name_dataset,name_dataset))
 
-    n_var = [] # to store number of parameters for each trainable variables - t_var
-    for i in range(len(tf.trainable_variables())):
-        t_var = tf.trainable_variables()[i]
+    # n_var = [] # to store number of parameters for each trainable variables - t_var
+    # for i in range(len(tf.trainable_variables())):
+    #     t_var = tf.trainable_variables()[i]
+    #
+    #     shape = t_var.shape
+    #     l = len(shape)
+    #     if l == 4:  # for CNN layers, they has 4 parameters
+    #         n_var.append((int(shape[0]) * int(shape[1]) * int(shape[2]) * int(shape[3])))
+    #     elif l == 2: # for FC layers, they have 2 parameters
+    #         n_var.append((int(shape[0]) * int(shape[1])))
+    #     else: # for bias, they have 1 parameter
+    #         n_var[-1] += int(shape[0])
+    #     print(t_var, n_var[-1])
 
-        shape = t_var.shape
-        l = len(shape)
-        if l == 4:  # for CNN layers, they has 4 parameters
-            n_var.append((int(shape[0]) * int(shape[1]) * int(shape[2]) + int(shape[3])))
-        elif l == 2: # for FC layers, they have 2 parameters
-            n_var.append((int(shape[0]) * int(shape[1])))
-        else: # for bias, they have 1 parameter
-            n_var[-1] += int(shape[0])
-        print(t_var)
-
+    t_vars = tf.trainable_variables()
+    n_var = []
+    for i in range(int(len(t_vars) / 2)):
+        n_var.append(F.count_params(t_vars[i * 2]) + F.count_params(t_vars[i * 2 + 1]))
+    # print('***',n_var)
 
     print('\n{} has {} parameters.'.format(name_dataset, sum(n_var)))
     for n in n_var:
