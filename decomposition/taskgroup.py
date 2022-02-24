@@ -1,5 +1,6 @@
 import tensorflow as tf
-print('tensorflow version:',tf.__version__)
+
+print('tensorflow version:', tf.__version__)  # we use tensorflow 2.x
 
 from tensorflow.keras import datasets, layers, models, Input
 from tensorflow.keras import backend as F
@@ -30,7 +31,7 @@ def dataload_mnist(chosenType):
     x_train, x_test = x_train / 255.0, x_test / 255.0
 
     ### make the label list binary with only chosenType being 1 and all other types being 0
-    y_test = [ 1 if c == chosenType else 0 for c in y_test]
+    y_test = [1 if c == chosenType else 0 for c in y_test]
     y_train = [1 if c == chosenType else 0 for c in y_train]
 
     ### expand dimension
@@ -39,11 +40,10 @@ def dataload_mnist(chosenType):
     y_train = tf.expand_dims(y_train, -1)
     y_test = tf.expand_dims(y_test, -1)
 
-
     return x_train, x_test, y_train, y_test
 
 
-def model_train(train = True, chosenType = 0):
+def model_train(train=True, chosenType=0):
     '''
     Retrain a new model or load a pretrained model
     :param train: True means to retrain a model; False means to load a pretrained model
@@ -51,10 +51,10 @@ def model_train(train = True, chosenType = 0):
     :return: return the keras model
     '''
 
-    if not train:  ### load model data from pretrained model
+    if not train:  # load model data from pretrained model
         model = keras.models.load_model('pretrained/mnist_{}'.format(chosenType))
 
-    else: ### else build and train a new model, and save it
+    else:  # else build and train a new model, and save it
 
         x_train, x_test, y_train, y_test = dataload_mnist(chosenType)
 
@@ -69,20 +69,21 @@ def model_train(train = True, chosenType = 0):
         model.add(layers.Dense(2))
         # model.summary()
 
-
-        ### compile, train and save model
+        # compile and train
         model.compile(optimizer='adam',
                       loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                       metrics=['accuracy'])
 
         model.fit(x_train, y_train, epochs=1, validation_data=(x_test, y_test))
+
+        # save model
         model.save('pretrained/mnist_{}'.format(chosenType))
+        print('Model saved: pretrained/mnist_{}'.format(chosenType))
 
     return model
 
 
-def RDM_Calc(K, chosenType = 0, train = False, getFuncNumber = False):
-
+def RDM_Calc(K, chosenType=0, train=False, getFuncNumber=False):
     '''
     calculate the Representation Dissimilarity Matrix (RDM) for each possible branch out point
     this function is for one task, you need to run this function repeatedly for all tasks
@@ -92,11 +93,11 @@ def RDM_Calc(K, chosenType = 0, train = False, getFuncNumber = False):
     :return: RDM for this task
     '''
 
-    model = model_train(chosenType = chosenType, train = train)
+    model = model_train(chosenType=chosenType, train=train)
     x_train, x_test, _, _ = dataload_mnist(chosenType)
     images = x_test[:K]
 
-    ### get the name of each layers for debug
+    # get the name of each layers for debug
     layersName = {idx: [layer.name, layer.output.shape] for idx, layer in enumerate(model.layers)}
 
     '''
@@ -120,14 +121,12 @@ def RDM_Calc(K, chosenType = 0, train = False, getFuncNumber = False):
         ### the 3-D tensors are linearized to 1-D tensors
         outs.append(out.reshape(out.shape[0], int(out.size / out.shape[0])))
 
-
     ### after we get intermediate results, we use them to calculate the Representation Dissimilarity Matrix (RDM)
     RDM = np.zeros((len(outs), K, K))
     for idx, out in enumerate(outs):
         ### for each func (a.k.a each branch out point)
         for i in range(K):
             for j in range(i, K):
-
                 ### pearson correlation coefficient tells you the correlation, we need the dissimilarity, so we use (1 - p)
                 RDM[idx][i][j] = 1 - stats.pearsonr(out[i], out[j])[0]
                 RDM[idx][j][i] = RDM[idx][i][j]  # the matrix is symmetric
@@ -143,18 +142,17 @@ def RSM_Calc(K):
     '''
 
     # some parameters
-    T = 10 # number of tasks, mnist dataset has 10 classes and we divide it into 10 individual tasks
-    D = RDM_Calc(1, getFuncNumber = True) # number of division points where you possibly branch out
+    T = 10  # number of tasks, mnist dataset has 10 classes and we divide it into 10 individual tasks
+    D = RDM_Calc(1, getFuncNumber=True)  # number of division points where you possibly branch out
     RSM = np.zeros((D, T, T))
 
     # calculate RDM for each task
-    RDM = [RDM_Calc(K, chosenType = t) for t in range(T)]
+    RDM = [RDM_Calc(K, chosenType=t) for t in range(T)]
 
     ###
     for d in range(D):
         for i in range(T):
             for j in range(T):
-
                 # extract RDM of the d_th division point for task_i and task_j
                 m1, m2 = RDM[i][d], RDM[j][d]
 
@@ -165,7 +163,6 @@ def RSM_Calc(K):
                 # calculate the Spearman’s correlation coefficient for task_i and task_j at the d_th division point
                 RSM[d][i][j] = stats.spearmanr(p1, p2).correlation
     return RSM
-
 
 
 def partition(collection):
@@ -179,23 +176,16 @@ def partition(collection):
     :return: all possible partitions
     '''
     if len(collection) == 1:
-        yield [ collection ]
+        yield [collection]
         return
 
     first = collection[0]
     for smaller in partition(collection[1:]):
         # insert `first` in each of the subpartition's subsets
         for n, subset in enumerate(smaller):
-            yield smaller[:n] + [[ first ] + subset]  + smaller[n+1:]
+            yield smaller[:n] + [[first] + subset] + smaller[n + 1:]
         # put `first` in its own subset
-        yield [ [ first ] ] + smaller
-
-
-# we save and reload RSM info
-# rsm = RSM_Calc(50)
-# np.save('rsm.npy', rsm)
-# RSM = np.load('rsm.npy')
-
+        yield [[first]] + smaller
 
 
 def ScoreCalc(clusters, depth, RSM):
@@ -207,13 +197,12 @@ def ScoreCalc(clusters, depth, RSM):
     :return: the averaged maximum distance between the dissimilarity scores of the elements in every cluster
     '''
 
-
     tobeAveraged = 0
     for cluster in clusters:
         n = len(cluster)
 
         if n <= 1:
-            tobeAveraged += 0 # the dissimilarity between a task and itself is 0
+            tobeAveraged += 0  # the dissimilarity between a task and itself is 0
         else:
             '''
             calculate all pair-wise dissimilarity scores for all elements in this cluster
@@ -237,7 +226,7 @@ def clustering(RSM):
 
     '''
     tasks = list(range(5))
-    queue = [] # to save all possible trees, and their score and model size
+    queue = []  # to save all possible trees, and their score and model size
 
     # get the weight size of each layer
     model = model_train(train=False)
@@ -285,19 +274,23 @@ def clustering(RSM):
             score = score0 + score1  # total dissimilarity score of all branch out points, score2 is omitted as it is 0
             model_size = sizeByBlock[0] + len(clusters0) * sizeByBlock[1] \
                          + len(clusters1) * sizeByBlock[2] \
-                         + len(tasks) * sizeByBlock[3] # total model size this tree requires
-            tree = [clusters0, '--->' ,clusters1]  # decomposition details
+                         + len(tasks) * sizeByBlock[3]  # total model size this tree requires
+            tree = [clusters0, '--->', clusters1]  # decomposition details
 
             queue.append([score, model_size, tree])
 
         # print('\n\n')
 
-    if len(tasks) <= 9:  # if more than 10, queue has 16733779 elements, too slow to be sorted
-        queue.sort(key = lambda x:(x[1], x[0]))
+        queue.sort(key=lambda x: (x[1], x[0])) # first sort by model_size, then by score
 
     return queue
 
 def plotQueue(queue):
+    '''
+    Plot how dissimilarity scores vary among all possible budgets
+    :param queue:
+    :return:
+    '''
     dic = defaultdict(list)
     for q in queue:
         dic[q[1]].append(q[0])
@@ -308,71 +301,36 @@ def plotQueue(queue):
     plt.show()
 
 
+def optimalTree(queue):
+    '''
+    print the optimal tree (with lowest dissimilarity score) for all budges (all possible model sizes)
+    :param queue: queue must have already been sorted - queue.sort(key=lambda x: (x[1], x[0]))
+    '''
+    # queue must be sorted
+
+    dic = {}
+    for q in queue:
+        if q[1] not in dic: # because queue is sorted, the first tree of a new model_size is the optimal one
+            dic[q[1]] = q[2]
+
+    for key, value in dic.items():
+        print(key, value)
+
+
+###############################
+
+# # for debug, we pre-train all single models in advance
+# # so that we do not need train them every time
+# for i in range(10):
+#     model_train(train=True, chosenType=i)
+
+# # for debug, we calculate RSM once and save it
+# # so that we do not need to recompute every time
+# rsm = RSM_Calc(50)
+# np.save('rsm.npy', rsm)
+# RSM = np.load('rsm.npy')
+
 RSM = np.load('rsm.npy')
 queue = clustering(RSM)
 plotQueue(queue)
-
-
-
-
-
-
-
-
-
-##################################################################################################################
-########################      the below is what I coded when developing the above functions       ################
-##################################################################################################################
-
-
-# x_train, x_test, y_train, y_test = dataload_mnist(9)
-#
-# model = models.Sequential()
-#
-# model.add(layers.Conv2D(8, (7, 7), strides = (2,2), activation='relu', input_shape=(28, 28, 1)))
-# model.add(layers.Conv2D(8, (2, 2), strides = (2,2), activation='relu', input_shape=(11, 11, 8)))
-# model.add(layers.MaxPooling2D((2, 2)))
-#
-# model.add(layers.Flatten())
-# model.add(layers.Dense(32, activation='relu'))
-# model.add(layers.Dense(64, activation='relu'))
-# model.add(layers.Dense(2))
-# # model.summary()
-#
-# layersName = {idx:[layer.name, layer.output.shape] for idx, layer in enumerate(model.layers)}
-#
-# ### setup functions to read outputs of intermediate layers
-# func0 = F.function([model.layers[0].input], [model.layers[0].output])
-# func1 = F.function([model.layers[0].input], [model.layers[2].output])
-# func2 = F.function([model.layers[0].input], [model.layers[4].output])
-# func3 = F.function([model.layers[0].input], [model.layers[5].output])
-# funcList = [func0, func1, func2, func3]
-#
-# model.compile(optimizer='adam',
-#               loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-#               metrics=['accuracy'])
-#
-#
-# model.fit(x_train, y_train, epochs=1, validation_data=(x_test, y_test))
-#
-#
-# images = x_test[:100]
-#
-# K = len(images) # K images were used
-# outs = []
-# for func in funcList:
-#     out = func(images)[0]
-#     outs.append(out.reshape(out.shape[0], int(out.size / out.shape[0])))
-#
-# RDM = np.zeros((len(outs), K, K))
-# for out in outs:
-#     RDM_f = np.zeros((K, K))  # Representation Dissimilarity Matrix (RDM) for each func (each branch out point)
-#     for i in range(K):
-#         for j in range(i, K):
-#             RDM_f[i][j] = 1 - stats.pearsonr(out[i], out[j])[0]
-#             RDM_f[j][i] = RDM_f[i][j]
-
-
-
-# res = stats.spearmanr(p1,p2)
-# res = res.correlation
+optimalTree(queue)

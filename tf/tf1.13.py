@@ -20,7 +20,7 @@ datasets = ['mnist', 'fmnist', 'cifar10', 'gtsrb', 'svhn', 'esc10', 'obs', 'gsc'
 
 
 
-name_dataset = datasets[6]
+name_dataset = datasets[5]
 
 with tf.Session() as sess:
 
@@ -54,7 +54,7 @@ with tf.Session() as sess:
 
     ### if we divide the entire network into three blocks, calculate ratio of each block's weights
     print('\n{} - Ratio:'.format(name_dataset))
-    divide = [[0,1,2], [3], [4], [5]]
+    divide = [[0,1,2,3], [4], [5]]
     for block in divide:
         n_b = 0
         for layer in block:
@@ -68,4 +68,5 @@ with tf.Session() as sess:
 # graph = tf.get_default_graph()
 # names_op = [op.name for op in graph.get_operations()]
 # names_tensor = [n.name for n in graph.as_graph_def().node]
+
 
