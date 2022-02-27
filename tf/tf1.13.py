@@ -13,6 +13,9 @@
 
 import tensorflow as tf
 from keras import backend as F
+import tensorflow.contrib.slim as slim
+
+
 
 # last three datasets have only 5 layers
 datasets = ['mnist', 'fmnist', 'cifar10', 'gtsrb', 'svhn', 'esc10', 'obs', 'gsc', 'hhar', 'us8k']
@@ -20,36 +23,31 @@ datasets = ['mnist', 'fmnist', 'cifar10', 'gtsrb', 'svhn', 'esc10', 'obs', 'gsc'
 
 
 
-name_dataset = datasets[5]
+name_dataset = datasets[0]
 
 with tf.Session() as sess:
 
     saver = tf.train.import_meta_graph('../../WeightSeparation/{}/{}.meta'.format(name_dataset,name_dataset))  # the downloaded repository is in WeightSeparation folder
     saver.restore(sess, '../../WeightSeparation/{}/{}'.format(name_dataset,name_dataset))
 
-    # n_var = [] # to store number of parameters for each trainable variables - t_var
-    # for i in range(len(tf.trainable_variables())):
-    #     t_var = tf.trainable_variables()[i]
-    #
-    #     shape = t_var.shape
-    #     l = len(shape)
-    #     if l == 4:  # for CNN layers, they has 4 parameters
-    #         n_var.append((int(shape[0]) * int(shape[1]) * int(shape[2]) * int(shape[3])))
-    #     elif l == 2: # for FC layers, they have 2 parameters
-    #         n_var.append((int(shape[0]) * int(shape[1])))
-    #     else: # for bias, they have 1 parameter
-    #         n_var[-1] += int(shape[0])
-    #     print(t_var, n_var[-1])
+    t_vars = tf.trainable_variables()  # obtain trainable variables
+    slim.model_analyzer.analyze_vars(t_vars, print_info=True)  # print model summary
 
-    t_vars = tf.trainable_variables()
     n_var = []
     for i in range(int(len(t_vars) / 2)):
-        n_var.append(F.count_params(t_vars[i * 2]) + F.count_params(t_vars[i * 2 + 1]))
+        '''
+        there are two ways of counting parameters of trainable variables: 
+            (method 1) use F.count_params, you have to first 'from keras import backend as F'
+            (method 2) use built-in function: var.get_shape().num_elements()
+        '''
+        # n_var.append(F.count_params(t_vars[i * 2]) + F.count_params(t_vars[i * 2 + 1])) # method1
+        n_var.append(t_vars[i * 2].get_shape().num_elements() + t_vars[i * 2 + 1].get_shape().num_elements()) # method2
+
     # print('***',n_var)
 
-    print('\n{} has {} parameters.'.format(name_dataset, sum(n_var)))
-    for n in n_var:
-        print(n)
+    print('\nModel {} has {} parameters and {} layers.'.format(name_dataset, sum(n_var), len(n_var)))
+    for i,n in enumerate(n_var):
+        print('layer {}: {}'.format(i, n))
 
 
     ### if we divide the entire network into three blocks, calculate ratio of each block's weights

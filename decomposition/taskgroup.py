@@ -334,3 +334,6 @@ RSM = np.load('rsm.npy')
 queue = clustering(RSM)
 plotQueue(queue)
 optimalTree(queue)
+
+
+
