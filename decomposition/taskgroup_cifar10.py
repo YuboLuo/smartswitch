@@ -10,9 +10,11 @@ from collections import defaultdict
 import numpy as np
 import matplotlib.pyplot as plt
 import itertools
+from tensorflow.keras.layers import Input, Conv2D, Activation, MaxPooling2D, Flatten, Dense, Dropout, Add
 
+dataset = 'cifar10'
 
-def dataload_mnist(chosenType):
+def loaddataset(chosenType):
     '''
     divide the original MNIST dataset into single digit recognition dataset (a binary classification problem)
     with the chosenType = 1, all other types = 0
@@ -20,12 +22,7 @@ def dataload_mnist(chosenType):
     :return: training and testing dataset
     '''
 
-    (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
-
-    assert x_train.shape == (60000, 28, 28)
-    assert x_test.shape == (10000, 28, 28)
-    assert y_train.shape == (60000,)
-    assert y_test.shape == (10000,)
+    (x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
 
     ### Normalize pixel values to be between 0 and 1
     x_train, x_test = x_train / 255.0, x_test / 255.0
@@ -35,13 +32,30 @@ def dataload_mnist(chosenType):
     y_train = [1 if c == chosenType else 0 for c in y_train]
 
     ### expand dimension
-    x_train = tf.expand_dims(x_train, -1)
-    x_test = tf.expand_dims(x_test, -1)
+    # x_train = tf.expand_dims(x_train, -1)  # for tensorflow<=2.0, comment this line
+    # x_test = tf.expand_dims(x_test, -1)    # for tensorflow<=2.0, comment this line
     y_train = tf.expand_dims(y_train, -1)
     y_test = tf.expand_dims(y_test, -1)
 
     return x_train, x_test, y_train, y_test
 
+def model_build():
+
+    input_0 = Input(shape=(32, 32, 3), name='input_0')
+    conv_0 = Conv2D(16, kernel_size=(3, 3), activation='relu', name='conv_0')(input_0)
+    conv_1 = Conv2D(32, kernel_size=(3, 3), activation='relu', name='conv_1')(conv_0)
+    conv_2 = Conv2D(52, kernel_size=(3, 3), activation='relu', name='conv_2')(conv_1)
+    pool_0 = MaxPooling2D(pool_size=(13, 13), name='pool_0')(conv_2)
+
+    flatten_0 = Flatten(name='flatten_0')(pool_0)
+
+    dense_0 = Dense(128, activation='relu', name='dense_0')(flatten_0)
+    dense_1 = Dense(128, activation='relu', name='dense_1')(dense_0)
+    dense_2 = Dense(10, activation='relu', name='dense_2')(dense_1)
+
+    model = models.Model(input_0, [dense_2])
+
+    return model
 
 def model_train(train=True, chosenType=0):
     '''
@@ -52,21 +66,15 @@ def model_train(train=True, chosenType=0):
     '''
 
     if not train:  # load model data from pretrained model
-        model = keras.models.load_model('pretrained/mnist_{}'.format(chosenType))
+        model = keras.models.load_model('pretrained/{}/{}_{}'.format(dataset, dataset, chosenType))
 
     else:  # else build and train a new model, and save it
 
-        x_train, x_test, y_train, y_test = dataload_mnist(chosenType)
+        x_train, x_test, y_train, y_test = loaddataset(chosenType)
 
-        model = models.Sequential()
 
-        model.add(layers.Conv2D(8, (7, 7), strides=(2, 2), activation='relu', input_shape=(28, 28, 1)))
-        model.add(layers.Conv2D(8, (2, 2), strides=(2, 2), activation='relu', input_shape=(11, 11, 8)))
-        model.add(layers.MaxPooling2D((2, 2)))
-        model.add(layers.Flatten())
-        model.add(layers.Dense(32, activation='relu'))
-        model.add(layers.Dense(64, activation='relu'))
-        model.add(layers.Dense(2))
+        model = model_build()
+
         # model.summary()
 
         # compile and train
@@ -77,8 +85,8 @@ def model_train(train=True, chosenType=0):
         model.fit(x_train, y_train, epochs=1, validation_data=(x_test, y_test))
 
         # save model
-        model.save('pretrained/mnist_{}'.format(chosenType))
-        print('Model saved: pretrained/mnist_{}'.format(chosenType))
+        model.save('pretrained/{}/{}_{}'.format(dataset, dataset, chosenType))
+        print('Model saved: pretrained/{}/{}_{}'.format(dataset, dataset, chosenType))
 
     return model
 
@@ -94,7 +102,7 @@ def RDM_Calc(K, chosenType=0, train=False, getFuncNumber=False):
     '''
 
     model = model_train(chosenType=chosenType, train=train)
-    x_train, x_test, _, _ = dataload_mnist(chosenType)
+    x_train, x_test, _, _ = loaddataset(chosenType)
     images = x_test[:K]
 
     # get the name of each layers for debug
@@ -321,7 +329,7 @@ def optimalTree(queue):
 
 # # for debug, we pre-train all single models in advance
 # # so that we do not need train them every time
-# for i in range(10):
+# for i in range(1):
 #     model_train(train=True, chosenType=i)
 
 # # for debug, we calculate RSM once and save it

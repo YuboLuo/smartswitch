@@ -23,12 +23,15 @@ datasets = ['mnist', 'fmnist', 'cifar10', 'gtsrb', 'svhn', 'esc10', 'obs', 'gsc'
 
 
 
-name_dataset = datasets[0]
+name_dataset = datasets[7]
 
 with tf.Session() as sess:
 
-    saver = tf.train.import_meta_graph('../../WeightSeparation/{}/{}.meta'.format(name_dataset,name_dataset))  # the downloaded repository is in WeightSeparation folder
-    saver.restore(sess, '../../WeightSeparation/{}/{}'.format(name_dataset,name_dataset))
+    # saver = tf.train.import_meta_graph('../../WeightSeparation/{}/{}.meta'.format(name_dataset,name_dataset))  # the downloaded repository is in WeightSeparation folder
+    # saver.restore(sess, '../../WeightSeparation/{}/{}'.format(name_dataset,name_dataset))
+
+    saver = tf.train.import_meta_graph('../../NeuralWeightVirtualization/{}/{}.meta'.format(name_dataset,name_dataset))  # the downloaded repository is in WeightSeparation folder
+    saver.restore(sess, '../../NeuralWeightVirtualization/{}/{}'.format(name_dataset,name_dataset))
 
     t_vars = tf.trainable_variables()  # obtain trainable variables
     slim.model_analyzer.analyze_vars(t_vars, print_info=True)  # print model summary
@@ -47,7 +50,7 @@ with tf.Session() as sess:
 
     print('\nModel {} has {} parameters and {} layers.'.format(name_dataset, sum(n_var), len(n_var)))
     for i,n in enumerate(n_var):
-        print('layer {}: {}'.format(i, n))
+        print('layer {}: {:<5}, shape = {}'.format(i, n, str(t_vars[i * 2].shape)))
 
 
     ### if we divide the entire network into three blocks, calculate ratio of each block's weights
