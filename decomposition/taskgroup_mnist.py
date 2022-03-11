@@ -365,10 +365,10 @@ def clustering_withBudget(RSM, N=5, Budget=5):
 
                     # summarize all info and pack them into the queue
                     score = score0 + score1  # total dissimilarity score of all branch out points, score2 is omitted as it is 0
-                    model_size = sizeByBlock[0] + len(clusters0) * sizeByBlock[1] \
-                                 + len(clusters1) * sizeByBlock[2] \
-                                 + len(tasks) * sizeByBlock[3]  # total model size this tree requires
-                    # model_size = sizeByBlock[0] + sizeByBlock[1] + sizeByBlock[2] + sizeByBlock[3]
+                    # model_size = sizeByBlock[0] + len(clusters0) * sizeByBlock[1] \
+                    #              + len(clusters1) * sizeByBlock[2] \
+                    #              + len(tasks) * sizeByBlock[3]  # total model size this tree requires
+                    model_size = sizeByBlock[0] + sizeByBlock[1] + sizeByBlock[2] + sizeByBlock[3]
                     tree = [clusters0, '--->', clusters1]  # decomposition details
 
                     queue.append([score, model_size, tree])
@@ -473,7 +473,7 @@ def clustering_withBudget_old(RSM, N = 5, Budget = 5):
                              + len(clusters1) * sizeByBlock[2] \
                              + len(tasks) * sizeByBlock[3]  # total model size this tree requires
                 # model_size = sizeByBlock[0] + sizeByBlock[1] + sizeByBlock[2] + sizeByBlock[3]
-                tree = [clusters0, '--->', clusters1]  # decomposition details
+                tree = [clusters0, clusters1]  # decomposition details
 
                 queue.append([score, model_size, tree])
 
@@ -541,7 +541,7 @@ def clustering(RSM, N = 5):
             model_size = sizeByBlock[0] + len(clusters0) * sizeByBlock[1] \
                          + len(clusters1) * sizeByBlock[2] \
                          + len(tasks) * sizeByBlock[3]  # total model size this tree requires
-            tree = [clusters0, '--->', clusters1]  # decomposition details
+            tree = [clusters0, clusters1]  # decomposition details
 
             queue.append([score, model_size, tree])
 
@@ -551,15 +551,19 @@ def clustering(RSM, N = 5):
 
     return queue
 
-def plotQueue(queue):
+def plotQueue(queue, Type = 1):
     '''
     Plot how dissimilarity scores vary among all possible budgets
-    :param queue:
+    :param queue: queue must be first processed by CalcSwitchOverhead if Type = 2
+    :param Type: 1 - plot dissimilarity score; 2 - plot switch overhead
     :return:
     '''
     dic = defaultdict(list)
-    for q in queue:
-        dic[q[1]].append(q[0])
+    for q in queue:      # q = [dissimilarity score, model size, decomposition detail, switch overhead]
+        if Type == 1:
+            dic[q[1]].append(q[0])
+        else:
+            dic[q[1]].append(q[3])
 
     for idx, key in enumerate(dic.keys()):
         plt.boxplot(dic[key], positions=[idx], showfliers=False)  # do not plot outliers
@@ -572,16 +576,73 @@ def optimalTree(queue):
     print the optimal tree (with lowest dissimilarity score) for all budges (all possible model sizes)
     :param queue: queue must have already been sorted - queue.sort(key=lambda x: (x[1], x[0]))
     '''
-    # queue must be sorted
+    # queue must be sorted by model size and then dissimilarity score
     print("Finding the optimal Tree...")
 
-    dic = {}
-    for q in queue:
+    dic = defaultdict(list)
+    score, budget, overhead = [], [], []
+    for q in queue:         # q = [dissimilarity score, model size, decomposition detail, switch overhead]
         if q[1] not in dic: # because queue is sorted, the first tree of a new model_size is the optimal one
-            dic[q[1]] = q[2]
+            dic[q[1]].append(q[0])
+            dic[q[1]].append(q[3])
+            dic[q[1]].append(q[2])
+
+            score.append(q[0])
+            budget.append(q[1])
+            overhead.append(q[3])
 
     for key, value in dic.items():
         print(key, value)
+
+    # plot score v.s. overhead
+    # first, we normalize the list by max-min normalization
+    score, overhead = np.array(score), np.array(overhead)
+    score = list((score - score.min()) / (score.max() - score.min()))
+    overhead = list((overhead - overhead.min()) / (overhead.max() - overhead.min()))
+
+    # score = list(np.array(score) / max(score))
+    # overhead = list(np.array(overhead)/ max(overhead))
+
+    plt.plot(range(len(score)), score, 'r')
+    plt.plot(range(len(overhead)), overhead, 'b')
+    plt.show()
+
+
+def CalcSwitchOverhead(queue):
+    '''
+    Calculate the switch overhead for each tree in queue
+    switch overhead is calculated based on the number of nodes to be swapped
+    in real implementation, it should be calculated based on the real weight size (e.g. KB) to be swapped
+    :param queue: a list of trees
+    :return: append a switch overhead to each tree, return queue
+    '''
+
+    N = int(queue[0][2][0].__sizeof__() / 8) # number of tasks
+
+    # we can use a symmetric matrix to store the task-wise switch overhead
+    # the maximum overhead from one task to another is to switch 3 nodes
+    # so the default total switch overhead for all possible pairs is 3 * the number of total pairs
+    # for N tasks, the number of all pairs is 1+2+...+(N-1) = sum(range(N))
+    # we then iterate the middle layers, if we find two tasks in one cluster, we decrease the overhead by 1
+    # the reminding overhead is the final total switch overhead over all possible pairs
+    overhead = sum(range(N)) * 3
+
+    for idx, q in enumerate(queue):
+
+        # reset overhead for each tree
+        overhead = sum(range(N)) * 3
+
+        q = q[2]
+        for layer in q:
+            for cluster in layer:
+                overhead -= sum(range(len(cluster)))
+
+        queue[idx].append(overhead)
+
+
+
+
+
 
 
 ###############################
@@ -598,12 +659,13 @@ def optimalTree(queue):
 # RSM = np.load('rsm.npy')
 
 RSM = np.load('rsm.npy')
-start = time.time()
-queue = clustering_withBudget_old(RSM, N=8, Budget=6)
-end = time.time()
-print('Time spent: {} second'.format(end - start))
-# queue = clustering(RSM, N=7)
-plotQueue(queue)
+# start = time.time()
+# queue = clustering_withBudget(RSM, N=7, Budget=6)
+# end = time.time()
+# print('Time spent: {} second'.format(end - start))
+queue = clustering(RSM, N=7)
+CalcSwitchOverhead(queue)
+# plotQueue(queue, Type=2)
 optimalTree(queue)
 
 
