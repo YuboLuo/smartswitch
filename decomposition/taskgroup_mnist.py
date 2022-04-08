@@ -573,7 +573,7 @@ def plotQueue(queue, Type = 1):
 
 def optimalTree(queue):
     '''
-    print the optimal tree (with lowest dissimilarity score) for all budges (all possible model sizes)
+    print the optimal tree (with lowest dissimilarity score) for all budgets (all possible model sizes)
     :param queue: queue must have already been sorted - queue.sort(key=lambda x: (x[1], x[0]))
     '''
     # queue must be sorted by model size and then dissimilarity score
@@ -600,12 +600,11 @@ def optimalTree(queue):
     score = list((score - score.min()) / (score.max() - score.min()))
     overhead = list((overhead - overhead.min()) / (overhead.max() - overhead.min()))
 
-    # score = list(np.array(score) / max(score))
-    # overhead = list(np.array(overhead)/ max(overhead))
+    # plt.plot(np.linspace(0,1, len(score)), score, 'r')
+    # plt.plot(np.linspace(0,1, len(overhead)), overhead, 'b')
+    # plt.show()
 
-    plt.plot(range(len(score)), score, 'r')
-    plt.plot(range(len(overhead)), overhead, 'b')
-    plt.show()
+    return score, overhead
 
 
 def CalcSwitchOverhead(queue):
@@ -640,9 +639,64 @@ def CalcSwitchOverhead(queue):
         queue[idx].append(overhead)
 
 
+def plotTraderOff_oneTree():
+    # plot the tradeoff figure for one case
+    RSM = np.load('rsm.npy')
+
+    queue = clustering(RSM, N=7)
+    CalcSwitchOverhead(queue)
+    score, overhead = optimalTree(queue)
+
+    fontsize = 13
+    linewidth = 2
+
+    fig, ax = plt.subplots()
+
+    ax.plot(np.linspace(0, 1, len(score)), score, 'r', label = 'Dissimilarity Score', linewidth = linewidth)
+    ax.plot(np.linspace(0, 1, len(overhead)), overhead, 'b', label = 'Switch Overhead', linewidth = linewidth)
+
+    # plot the intersection point and a vertical line segment
+    point = (0.22, 0.353) # the coordinates of the intersection point
+    # circle = plt.Circle(point, 0.02, color='green')
+    # ax.add_patch(circle)
+    ax.plot([point[0], point[0]], [0, point[1]], 'k', linewidth = linewidth, linestyle = 'dotted')
+
+    plt.ylim([0, 1])
+    plt.xlim([0, 1])
+    ax.legend(loc='right', fontsize=fontsize - 2)
+    plt.yticks(fontsize=fontsize)
+    plt.xticks(fontsize=fontsize)
+    plt.ylabel('Dissimilarity Score\nand Switch Overhead', fontsize=fontsize)
+    plt.xlabel('Model Size Budget', fontsize=fontsize)
+    plt.title('Normalized Results', fontsize=fontsize)
+
+    fig.set_size_inches(4.5, 3)
+    plt.subplots_adjust(
+        left=0.193,
+        bottom=0.175,
+        right=0.951,
+        top=0.9,
+        wspace=1,
+        hspace=0.5,
+    )
+
+    fig.show()
+    fig.savefig("algo1_tradeoff.pdf")
+
+def plotTradeOff_multiTree():
+    # plot the tradeoff figure for multiple cases in one plot which has different numbers of tasks
 
 
+    RSM = np.load('rsm.npy')
 
+    for N in range(4, 8):
+        queue = clustering(RSM, N=N)
+        CalcSwitchOverhead(queue)
+        score, overhead = optimalTree(queue)
+
+        plt.plot(np.linspace(0, 1, len(score)), score, 'r')
+        plt.plot(np.linspace(0, 1, len(overhead)), overhead, 'b')
+    plt.show()
 
 
 ###############################
@@ -658,14 +712,15 @@ def CalcSwitchOverhead(queue):
 # np.save('rsm.npy', rsm)
 # RSM = np.load('rsm.npy')
 
-RSM = np.load('rsm.npy')
-# start = time.time()
-# queue = clustering_withBudget(RSM, N=7, Budget=6)
-# end = time.time()
-# print('Time spent: {} second'.format(end - start))
-queue = clustering(RSM, N=7)
-CalcSwitchOverhead(queue)
-# plotQueue(queue, Type=2)
-optimalTree(queue)
+# RSM = np.load('rsm.npy')
+# # start = time.time()
+# # queue = clustering_withBudget(RSM, N=7, Budget=6)
+# # end = time.time()
+# # print('Time spent: {} second'.format(end - start))
+# queue = clustering(RSM, N=5)
+# CalcSwitchOverhead(queue)
+# # plotQueue(queue, Type=2)
+# optimalTree(queue)
 
+plotTraderOff_oneTree()
 
