@@ -51,10 +51,16 @@ def get_possible_branch_locations():
 
     return list
 
-def get_segment_byBlock(data, branchIdx_inRSM = [0, 2, 4]):
+def get_segment_byBlock(data, Idx = [0, 1, 4]):
+    '''
+    segment data (layer-wise network overhead savings) into four parts by the three branch out points
+    :param data: layer-wise network overhead savings, e.g., weight-reloading savings, computational savings
+    :param Idx: the index of branch out points w.r.t all possible branchable points, For example, if len(RSM) = D, then
+            it means there are D branchable points, Idx is corresponding to range(D)
+    :return: segmented result
+    '''
 
-
-    Idx = branchIdx_inRSM  # use a shorter name
+    # Idx = branchIdx_inRSM  # use a shorter name
     segmented = [sum(data[:Idx[0]+1]),           # block_0 - always shared by all tasks
                    sum(data[Idx[0]+1:Idx[1]+1]),   # block_1
                    sum(data[Idx[1]+1:Idx[2]+1]),   # block_2
@@ -62,32 +68,49 @@ def get_segment_byBlock(data, branchIdx_inRSM = [0, 2, 4]):
 
     return segmented
 
-def get_weightsize_byBlock():
+def get_weightsize_byBlock(Idx):
+    '''
+    get block-wise weight size - in number of parameters
+    '''
 
-    # get the weight size of each layer
     model = model_train(train=False)
+
     var = model.trainable_variables
-
-
     sizeByLayer = [F.count_params(i) + F.count_params(j) for i, j in zip(var[0::2], var[1::2])]
 
-    # Idx = branchIdx_inRSM  # use a shorter name
-    # sizeByBlock = [sum(sizeByLayer[:Idx[0]+1]),           # block_0 - always shared by all tasks
-    #                sum(sizeByLayer[Idx[0]+1:Idx[1]+1]),   # block_1
-    #                sum(sizeByLayer[Idx[1]+1:Idx[2]+1]),   # block_2
-    #                sum(sizeByLayer[Idx[2]+1:])]           # block_3
-
-    sizeByBlock = get_segment_byBlock(sizeByLayer)
+    sizeByBlock = get_segment_byBlock(sizeByLayer, Idx=Idx)
 
     return sizeByBlock
 
-def get_ComputationalSavings():
+def get_ComputationalSavings(Idx):
+    '''
+    get block-wise computational savings w.r.t time
+    '''
 
+    # # layer-wise inference time array, this array comes from our experiment results
     timesavingsByLayer = [0.71, 1.97, 0.62, 0.12, 0.92, 0.07]
-    timesavingsByBlock = get_segment_byBlock(timesavingsByLayer)
+
+    timesavingsByBlock = get_segment_byBlock(timesavingsByLayer,Idx=Idx)
 
     return timesavingsByBlock
 
+def ascending(array):
+    '''
+    make array strictly ascending
+    '''
+    for i in range(1,len(array)):
+        if array[i] < array[i - 1]:
+            array[i] = array[i -1]
+    return array
+
+def descending(array):
+    '''
+    make array strictly descending
+    '''
+    for i in range(1,len(array)):
+        if array[i] > array[i - 1]:
+            array[i] = array[i -1]
+    return array
 
 ##################################################################################################################
 
@@ -611,7 +634,7 @@ def GetBranchingInfo(branchIdx_inRSM = [0, 2, 4]):
 
 
 
-def clustering(RSM, N = 5):
+def clustering(RSM, Idx, N = 5):
     '''
     enumerate all possible trees and calculate the similarity score for each tree
     :param RSM: pre-computed Representation Similarity Matrix - the paper calls it task affinity tensor A
@@ -621,30 +644,17 @@ def clustering(RSM, N = 5):
     tasks = list(range(N))
     queue = []  # to save all possible trees, and their score and model size
 
-    # # get the weight size of each layer
-    # model = model_train(train=False)
-    # var = model.trainable_variables
-    #
-    #
-    # sizeByLayer = [F.count_params(i) + F.count_params(j) for i, j in zip(var[0::2], var[1::2])]
-    #
-    # Idx = branchIdx_inRSM  # use a shorter name
-    # sizeByBlock = [sum(sizeByLayer[:Idx[0]+1]),           # block_0 - always shared by all tasks
-    #                sum(sizeByLayer[Idx[0]+1:Idx[1]+1]),   # block_1
-    #                sum(sizeByLayer[Idx[1]+1:Idx[2]+1]),   # block_2
-    #                sum(sizeByLayer[Idx[2]+1:])]           # block_3
-
-    sizeByBlock = get_weightsize_byBlock()
+    sizeByBlock = get_weightsize_byBlock(Idx=Idx)
 
     for clusters0 in partition(tasks):
 
         ''' Variable Name Explanation 
         clustersX, depthX, scoreX: 'X' means the Xth branch out point
         clustersX: means the branched-out result at Xth branch out point
-        scoreX: means the dissimilarity score for clustersX
+        scoreX: means the similarity score for clustersX
         '''
 
-        depth0, depth1 = 0, 1
+        depth0, depth1 = Idx[0], Idx[1]
         score0 = ScoreCalc(clusters0, depth0, RSM)
 
         # print(clusters0)
@@ -739,19 +749,22 @@ def optimalTree(queue):
         print(key, value)
 
     # # plot score v.s. overhead
-    # # first, we normalize the list by max-min normalization
-    score, overhead = np.array(score), np.array(overhead)
+    '''
+    Attention: we may have to remove the first few scores to make the curve smoother to avoid abrupt slop 
+    '''
+    remove = 1
+    score, overhead, budget = score[remove:], overhead[remove:], budget[remove:]
+
+    score, overhead = ascending(np.array(score)), descending(np.array(overhead))
+    # score, overhead = np.array(score), np.array(overhead)
+
+    # # normalize by max-min normalization method
     score = list((score - score.min()) / (score.max() - score.min()))
     overhead = list((overhead - overhead.min()) / (overhead.max() - overhead.min()))
 
-    # plt.plot(np.linspace(0,1, len(score)), score, 'r')
-    # plt.plot(np.linspace(0,1, len(overhead)), overhead, 'b')
-    # plt.show()
+    return score, overhead, budget
 
-    return score, overhead
-
-
-def CalcSwitchOverheadReduction(queue):
+def CalcSwitchOverheadReduction(queue, Idx):
     '''
     Calculate switch overhead reduction for each tree in queue
     switch overhead reduction has two parts: computational saving in time + weights-reloading saving in time
@@ -759,9 +772,7 @@ def CalcSwitchOverheadReduction(queue):
     :return: no return, directly append the calculated result to queue at each row
     '''
 
-    N = int(queue[0][2][0].__sizeof__() / 8) # N is the number of tasks
-    # SavingCpt: computational savings w.r.t time
-    # SavingWgt: weights-reloading savings w.r.t time
+    # N = int(queue[0][2][0].__sizeof__() / 8) # N is the number of tasks
 
     '''
     we can use a symmetric matrix to store the task-wise switch overhead
@@ -772,19 +783,20 @@ def CalcSwitchOverheadReduction(queue):
     the reminding overhead is the final total switch overhead over all possible pairs
     '''
 
-    cpt_byBlock = [1,2,3,4]  # computational overhead of each block w.r.t time, we have 4 blocks, so it has 4 values
-    wgt_byBlock = [1,2,3,4]  # weight-reloading overhead of each block w.r.t time
+    # # cpt_byBlock, computational overhead of each block w.r.t time, we have 4 blocks, so it has 4 values
+    # # wgt_byBlock, weight-reloading overhead of each block w.r.t time
+    sizeByBlock = get_weightsize_byBlock(Idx)
 
-    sizeByBlock = get_weightsize_byBlock()
     wgt_byBlock = [w * 2 / 64000 * 0.6 for w in sizeByBlock] # w is number of params, we use 16bit, so w * 2 is the total byte of memory
                                                              # based on our hardware experiment, it take 600ms to read 64KB
-    cpt_byBlock = get_ComputationalSavings()
+    cpt_byBlock = get_ComputationalSavings(Idx)
 
     for idx, q in enumerate(queue):
 
         # an example of q: [0.8002560306341132, 3, [[[0, 1, 2, 3, 4, 5, 6]], [[0, 1, 2, 3, 4, 5, 6]]]]
 
-        # reset overhead for each tree
+        # # SavingCpt: computational savings w.r.t time
+        # # SavingWgt: weights-reloading savings w.r.t time
         SavingWgt, SavingCpt = 0, 0 # reset for each q
 
         for idx2, layer in enumerate(q[2]): # q contains an optimal decomposition tree's middle two blocks which is q[2]
@@ -792,37 +804,45 @@ def CalcSwitchOverheadReduction(queue):
 
                 # # the decomposition tree only has two middle layers
                 if idx2 == 0: # for the 1st middle layer
-                    SavingCpt = sum(range(len(cluster))) * cpt_byBlock[1]
-                    SavingWgt = sum(range(len(cluster))) * wgt_byBlock[1]
+                    SavingCpt += sum(range(len(cluster))) * cpt_byBlock[1]
+                    SavingWgt += sum(range(len(cluster))) * wgt_byBlock[1]
                 elif idx2 == 1:
-                    SavingCpt = sum(range(len(cluster))) * cpt_byBlock[2]
-                    SavingWgt = sum(range(len(cluster))) * wgt_byBlock[1]
+                    SavingCpt += sum(range(len(cluster))) * cpt_byBlock[2]
+                    SavingWgt += sum(range(len(cluster))) * wgt_byBlock[1]
 
 
         queue[idx].append(SavingWgt + SavingCpt) # append the total savings
 
 
-def plotTraderOff_oneTree():
+def plotTraderOff_oneTree(Idx):
     # plot the tradeoff figure for one case
     RSM = np.load('rsm.npy')
+    print('Idx = {}'.format(Idx))
 
-    queue = clustering(RSM, N=5)
-    CalcSwitchOverheadReduction(queue)
-    score, overhead = optimalTree(queue)
+    queue = clustering(RSM, Idx, N=5)
+    CalcSwitchOverheadReduction(queue, Idx)
+    score, overhead, budget = optimalTree(queue)
 
     fontsize = 13
     linewidth = 2
 
     fig, ax = plt.subplots()
 
-    ax.plot(np.linspace(0, 1, len(score)), score, 'r', label = 'Similarity score', linewidth = linewidth)
-    ax.plot(np.linspace(0, 1, len(overhead)), overhead, 'b', label = 'Overhead reduction', linewidth = linewidth)
+    x = np.linspace(0, 1, len(score))
+    ax.plot(x, score, 'r', label = 'Similarity score', linewidth = linewidth)
+    ax.plot(x, overhead, 'b', label = 'Overhead reduction', linewidth = linewidth)
+
+    print('\n\n*********************************')
+    print('X-axis - Budget')
+    for i in range(len(x)):
+        print('{:.3f} - {}'.format(x[i], budget[i]))
+
 
     # # plot the intersection point and a vertical line segment
-    point = (0.22, 0.353) # the coordinates of the intersection point
+    point = (0.229, 0.575) # the coordinates of the intersection point
     # circle = plt.Circle(point, 0.02, color='green')
     # ax.add_patch(circle)
-    # ax.plot([point[0], point[0]], [0, point[1]], 'k', linewidth = linewidth, linestyle = 'dotted')
+    # ax.plot([point[0], point[0]], [0, point[1]], 'k', linewidth=linewidth, linestyle='dotted') # plot a vertical line
 
     plt.ylim([0, 1])
     plt.xlim([0, 1])
@@ -831,14 +851,17 @@ def plotTraderOff_oneTree():
     plt.xticks(fontsize=fontsize)
     plt.ylabel('Task similarity score\nand Overhead reduction', fontsize=fontsize)
     plt.xlabel('Model Size Budget', fontsize=fontsize)
-    plt.title('Normalized Results', fontsize=fontsize)
+    # plt.title('Normalized Results', fontsize=fontsize)
 
-    fig.set_size_inches(4.5, 3)
+    # bbox_to_anchor = (x0, y0, width, height)
+    plt.legend(bbox_to_anchor=(-0.25, 1.0, 1.26, 0.9), loc=3, shadow=False, mode='expand', ncol=2, fontsize='large')
+
+    fig.set_size_inches(4.5, 3.5)
     plt.subplots_adjust(
         left=0.193,
-        bottom=0.175,
+        bottom=0.14,
         right=0.951,
-        top=0.9,
+        top=0.877,
         wspace=1,
         hspace=0.5,
     )
@@ -887,7 +910,7 @@ def plotTradeOff_multiTree():
 
 
 
-plotTraderOff_oneTree()
+plotTraderOff_oneTree(Idx=[0,2,4])
 
 ########################### below is debug history ############################
 

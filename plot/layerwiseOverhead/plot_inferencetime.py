@@ -31,6 +31,7 @@ rects16 = ax.bar(x + 2.5 * width, values[5,:], width, label='L6-FC',color='#f472
 ax.set_xticklabels(['MNIST','CIFAR-10','SVHN','GTSBR'])
 plt.xticks( range(len(x)),fontsize=fontsize, rotation=0)
 
+# bbox_to_anchor = (x0, y0, width, height)
 legend = plt.legend(bbox_to_anchor=(0, 0.98, 1.,1), loc=3, shadow=False,mode='expand',ncol=3,fontsize='large')
 
 plt.xlabel('Datasets', fontsize=fontsize)
