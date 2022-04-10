@@ -5,12 +5,92 @@ print('tensorflow version:', tf.__version__)  # we use tensorflow 2.x
 from tensorflow.keras import datasets, layers, models, Input
 from tensorflow.keras import backend as F
 from tensorflow import keras
+from tensorflow.keras.layers import Input, Conv2D, Dense, MaxPooling2D, Flatten
+
 from scipy import stats
 from collections import defaultdict
 import numpy as np
 import matplotlib.pyplot as plt
 import itertools, more_itertools
 import time
+
+
+##################################################################################################################
+# helper functions
+
+def get_possible_branch_locations():
+    '''
+    our model may have different types of layers, e.g., Conv, Dense, MaxPooling, Flatten
+    we will attach MaxPooling, Flatten layers to the closest Conv layer that is before them
+    because MaxPooling Flatten layers do not have weight parameters
+    Besides, we do not branch out after the final layer
+    :return : the index of layers after which we can be branch out
+    Example, model = Conv(0) + Conv(1) + Conv(2) + MaxPooling(3) + Flatten(4) + Dense(5) + Dense(6) + Dense(7)
+    we will return [0, 1, 4, 5, 6]
+    '''
+
+    model = model_train(train=False)
+
+    list = []
+    for idx, layer in enumerate(model.layers):
+
+        if idx == len(model.layers) - 1: # we do not branch out on the final layer
+            continue
+
+        if 'input' in layer.name:  # we do not branch out on input layer
+            continue
+
+        # # we assume layers (e.g. MaxPooling, Flatten) other than Conv and Dense will only exist after Conv layers
+        # # and Dense layers are all consecutively connected to each other
+        if ('conv' in model.layers[idx].name and 'conv' in model.layers[idx + 1].name) or \
+            ('conv' not in model.layers[idx].name and 'conv' in model.layers[idx + 1].name) or \
+            ('conv' not in model.layers[idx].name and 'dense' in model.layers[idx + 1].name) or \
+            ('dense' in model.layers[idx].name):
+
+            list.append(idx)
+
+    return list
+
+def get_segment_byBlock(data, branchIdx_inRSM = [0, 2, 4]):
+
+
+    Idx = branchIdx_inRSM  # use a shorter name
+    segmented = [sum(data[:Idx[0]+1]),           # block_0 - always shared by all tasks
+                   sum(data[Idx[0]+1:Idx[1]+1]),   # block_1
+                   sum(data[Idx[1]+1:Idx[2]+1]),   # block_2
+                   sum(data[Idx[2]+1:])]           # block_3
+
+    return segmented
+
+def get_weightsize_byBlock():
+
+    # get the weight size of each layer
+    model = model_train(train=False)
+    var = model.trainable_variables
+
+
+    sizeByLayer = [F.count_params(i) + F.count_params(j) for i, j in zip(var[0::2], var[1::2])]
+
+    # Idx = branchIdx_inRSM  # use a shorter name
+    # sizeByBlock = [sum(sizeByLayer[:Idx[0]+1]),           # block_0 - always shared by all tasks
+    #                sum(sizeByLayer[Idx[0]+1:Idx[1]+1]),   # block_1
+    #                sum(sizeByLayer[Idx[1]+1:Idx[2]+1]),   # block_2
+    #                sum(sizeByLayer[Idx[2]+1:])]           # block_3
+
+    sizeByBlock = get_segment_byBlock(sizeByLayer)
+
+    return sizeByBlock
+
+def get_ComputationalSavings():
+
+    timesavingsByLayer = [0.71, 1.97, 0.62, 0.12, 0.92, 0.07]
+    timesavingsByBlock = get_segment_byBlock(timesavingsByLayer)
+
+    return timesavingsByBlock
+
+
+##################################################################################################################
+
 
 def dataload_mnist(chosenType):
     '''
@@ -58,15 +138,19 @@ def model_train(train=True, chosenType=0):
 
         x_train, x_test, y_train, y_test = dataload_mnist(chosenType)
 
+        # # implement the same network architecture from NeuralWeightVirtualization for MNIST dataset
         model = models.Sequential()
-
-        model.add(layers.Conv2D(8, (7, 7), strides=(2, 2), activation='relu', input_shape=(28, 28, 1)))
-        model.add(layers.Conv2D(8, (2, 2), strides=(2, 2), activation='relu', input_shape=(11, 11, 8)))
+        model.add(layers.Conv2D(8, (3, 3), activation='relu', input_shape=(28, 28, 1)))
+        model.add(layers.MaxPooling2D((2, 2)))
+        model.add(layers.Conv2D(16, (3, 3), activation='relu'))
+        model.add(layers.MaxPooling2D((2, 2)))
+        model.add(layers.Conv2D(32, (3, 3), activation='relu'))
         model.add(layers.MaxPooling2D((2, 2)))
         model.add(layers.Flatten())
-        model.add(layers.Dense(32, activation='relu'))
-        model.add(layers.Dense(64, activation='relu'))
-        model.add(layers.Dense(2))
+        model.add(layers.Dense(128, activation='relu'))
+        model.add(layers.Dense(256, activation='relu'))
+        model.add(layers.Dense(10))
+
         # model.summary()
 
         # compile and train
@@ -97,37 +181,39 @@ def RDM_Calc(K, chosenType=0, train=False, getFuncNumber=False):
     x_train, x_test, _, _ = dataload_mnist(chosenType)
     images = x_test[:K]
 
-    # get the name of each layers for debug
-    layersName = {idx: [layer.name, layer.output.shape] for idx, layer in enumerate(model.layers)}
+    # # get the name of each layers for debug
+    # layersName = {idx: [layer.name, layer.output.shape] for idx, layer in enumerate(model.layers)}
 
     '''
-    setup functions to read outputs of intermediate layers
-    those functions are related to specific model architecture, so design here accordingly
+    set up functions to read the output of every intermediate layer 
+    we only read intermediate results after layers with trainable weights
+    for layers without weights, e.g., MaxPooling, Flatten, we attach them to the closest conv layer before it
+    as for how to get those layers, it is implemented in get_possible_branch_locations()
     '''
-    func0 = F.function([model.layers[0].input], [model.layers[1].output])
-    func1 = F.function([model.layers[0].input], [model.layers[4].output])
-    func2 = F.function([model.layers[0].input], [model.layers[5].output])
-    funcList = [func0, func1, func2]
+    funcList = []
+    possible_branchLoc = get_possible_branch_locations()
+    for idx in possible_branchLoc:
+        funcList.append(F.function([model.layers[0].input], [model.layers[idx].output]))
 
     if getFuncNumber:
         return len(funcList)
 
-    ### read outputs from intermediate layers of the model using K images
+    # # read outputs from intermediate layers of the model using K images
     K = len(images)  # K images were used
     outs = []
     for func in funcList:
         out = func(images)[0]
 
-        ### the 3-D tensors are linearized to 1-D tensors
+        # # the 3-D tensors are linearized to 1-D tensors
         outs.append(out.reshape(out.shape[0], int(out.size / out.shape[0])))
 
-    ### after we get intermediate results, we use them to calculate the Representation Dissimilarity Matrix (RDM)
+    # # after we get intermediate results, we use them to calculate the Representation Dissimilarity Matrix (RDM)
     RDM = np.zeros((len(outs), K, K))
     for idx, out in enumerate(outs):
-        ### for each func (a.k.a each branch out point)
+        # # for each func (a.k.a each branch out point)
         for i in range(K):
             for j in range(i, K):
-                ### pearson correlation coefficient tells you the correlation, we need the dissimilarity, so we use (1 - p)
+                # # pearson correlation coefficient tells the correlation, we need the dissimilarity, so we use (1 - p)
                 RDM[idx][i][j] = 1 - stats.pearsonr(out[i], out[j])[0]
                 RDM[idx][j][i] = RDM[idx][i][j]  # the matrix is symmetric
 
@@ -136,32 +222,41 @@ def RDM_Calc(K, chosenType=0, train=False, getFuncNumber=False):
 
 def RSM_Calc(K):
     '''
-    calculate the task-wise Representation Similarity Matrix (RSM) - the paper calls it task affinity tensor A
+    calculate task-wise Representation Similarity Matrix (RSM) - the paper calls it task affinity tensor A
     :param K: the number of images to use for RDM calculation
     :return:
     '''
 
-    # some parameters
+    print('calculate task-wise Representation Similarity Matrix (RSM)...')
+
+    # # some parameters
     T = 10  # number of tasks, mnist dataset has 10 classes and we divide it into 10 individual tasks
-    D = RDM_Calc(1, getFuncNumber=True)  # number of division points where you possibly branch out
+    D = RDM_Calc(1, getFuncNumber=True)  # D is the number of branch out points
     RSM = np.zeros((D, T, T))
 
-    # calculate RDM for each task
-    RDM = [RDM_Calc(K, chosenType=t) for t in range(T)]
+    # # calculate RDM for each task
+    # RDM = [RDM_Calc(K, chosenType=t) for t in range(T)]
+    RDM = []
+    for t in range(T):
+        RDM.append(RDM_Calc(K, chosenType=t))
+        print('RDM: {}/{} task done.'.format(t + 1, T))
 
-    ###
+    # #
     for d in range(D):
+
         for i in range(T):
             for j in range(T):
-                # extract RDM of the d_th division point for task_i and task_j
+                # # extract RDM of the d_th division point for task_i and task_j
                 m1, m2 = RDM[i][d], RDM[j][d]
 
-                # extract the upper triangle of the matrix and flatten them into a list
+                # # extract the upper triangle of the matrix and flatten them into a list
                 p1 = [elem for ii, row in enumerate(m1) for jj, elem in enumerate(row) if ii < jj]
                 p2 = [elem for ii, row in enumerate(m2) for jj, elem in enumerate(row) if ii < jj]
 
-                # calculate the Spearman’s correlation coefficient for task_i and task_j at the d_th division point
+                # # calculate the Spearman’s correlation coefficient for task_i and task_j at the d_th division point
                 RSM[d][i][j] = stats.spearmanr(p1, p2).correlation
+
+    print('RSM done...')
     return RSM
 
 
@@ -181,20 +276,20 @@ def partition(collection):
 
     first = collection[0]
     for smaller in partition(collection[1:]):
-        # insert `first` in each of the subpartition's subsets
+        # # insert `first` in each of the subpartition's subsets
         for n, subset in enumerate(smaller):
             yield smaller[:n] + [[first] + subset] + smaller[n + 1:]
-        # put `first` in its own subset
+        # # put `first` in its own subset
         yield [[first]] + smaller
 
 
 def ScoreCalc(clusters, depth, RSM):
     '''
-    calculate the task dissimilarity score for a given division point
+    calculate the task similarity/affinity score for a given division point
     :param clusters: the input cluster list, e.g. for [[1,2],[3,4]], [1,2] is a cluster, [3,4] is a cluster
     :param depth: the division point
     :param RSM: pre-computed Representation Similarity Matrix - the paper calls it task affinity tensor A
-    :return: the averaged maximum distance between the dissimilarity scores of the elements in every cluster
+    :return: use 1 to minus the averaged max distance between the dissimilarity scores of the elements in every cluster
     '''
 
     tobeAveraged = 0
@@ -212,13 +307,15 @@ def ScoreCalc(clusters, depth, RSM):
             for i in range(n - 1):
                 for j in range(i + 1, n):
 
-                    # 1 - RSM(d, i, j) is the dissimilarity score between task_i and task_j at division point d
+                    # # 1 - RSM(d, i, j) is the dissimilarity score between task_i and task_j at division point d
                     if 1 - RSM[depth][cluster[i]][cluster[j]] > max_score:
                         max_score = 1 - RSM[depth][cluster[i]][cluster[j]]
 
             tobeAveraged += max_score
 
-    return tobeAveraged / len(clusters)
+    # # on Apr 2022, we decided to use similarity score (the higher the better) to evaluate a decomposition tree
+    # # so, we now use 1 - tobeAveraged / len(clusters), instead of tobeAveraged / len(clusters)
+    return 1 - tobeAveraged / len(clusters)
 
 
 def weak_compositions(boxes, balls, parent=tuple(), depth = 0, constraint = [float('inf')] * 30):
@@ -483,22 +580,61 @@ def clustering_withBudget_old(RSM, N = 5, Budget = 5):
     print('cnt1 = {}, cnt2 = {}, unnecessary searches ratio = {:.3}'.format(cnt1, cnt2, cnt1/(cnt1 + cnt2) ))
     return queue
 
-def clustering(RSM, N = 5):
+def GetBranchingInfo(branchIdx_inRSM = [0, 2, 4]):
     '''
-    enumerate all possible trees and calculate their dissimilarity score
-    :param RSM: pre-computed Representation Similarity Matrix - the paper calls it task affinity tensor A
-    :param N: total number of tasks
+    to be deleted
+    :param branchIdx_inRSM: we have 3 branch out points, branchIdx has the index of the 3 branch out points w.r.t RSM
+    :return:
     '''
-
-    # N = 9 # number of tasks
-    tasks = list(range(N))
-    queue = []  # to save all possible trees, and their score and model size
 
     # get the weight size of each layer
     model = model_train(train=False)
+
+
+    possible_branchLoc = get_possible_branch_locations()  # get the index of possible branch out locations
+    branchIdx_inLayer = [possible_branchLoc[idx] for idx in branchIdx_inRSM] # index of the three branch out points w.r.t model.layers
+
+    # # trainable variables do not contain MaxPooling and Flatten layers
+    # # trainable variables only contain Conv and Dense layer
+    # # example of WeightSizeByTrainableVar: [400, 264, 264, 288, 2112, 130], the sizes of first 3 Conv layers and then 3 Dense layers
     var = model.trainable_variables
-    sizeByLayer = [F.count_params(i) + F.count_params(j) for i, j in zip(var[0::2], var[1::2])]
-    sizeByBlock = [sizeByLayer[0] + sizeByLayer[1]] + sizeByLayer[2:]
+    WeightSizeByTrainableVar = [F.count_params(i) + F.count_params(j) for i, j in zip(var[0::2], var[1::2])]
+
+    # # because we use switching overhead reduction w.r.t time
+    # # switching overhead reduction has two parts: computational savings + weight-reloading savings
+
+    # # weight-reloading savings
+
+
+
+
+
+
+
+def clustering(RSM, N = 5):
+    '''
+    enumerate all possible trees and calculate the similarity score for each tree
+    :param RSM: pre-computed Representation Similarity Matrix - the paper calls it task affinity tensor A
+    :param N: the number of tasks
+    '''
+
+    tasks = list(range(N))
+    queue = []  # to save all possible trees, and their score and model size
+
+    # # get the weight size of each layer
+    # model = model_train(train=False)
+    # var = model.trainable_variables
+    #
+    #
+    # sizeByLayer = [F.count_params(i) + F.count_params(j) for i, j in zip(var[0::2], var[1::2])]
+    #
+    # Idx = branchIdx_inRSM  # use a shorter name
+    # sizeByBlock = [sum(sizeByLayer[:Idx[0]+1]),           # block_0 - always shared by all tasks
+    #                sum(sizeByLayer[Idx[0]+1:Idx[1]+1]),   # block_1
+    #                sum(sizeByLayer[Idx[1]+1:Idx[2]+1]),   # block_2
+    #                sum(sizeByLayer[Idx[2]+1:])]           # block_3
+
+    sizeByBlock = get_weightsize_byBlock()
 
     for clusters0 in partition(tasks):
 
@@ -532,12 +668,14 @@ def clustering(RSM, N = 5):
             '''
             our paper only has three layers of branch out points, for the final one, it is always branched into single tasks
             so, we do not need to continue the processing of clusters2/score2
-            clusters2 will all be single tasks, e.g. clusters2 should always be [[0],[1],[2],[3],[4]] if 5 tasks in total. 
+            clusters2 will all be single tasks, e.g. clusters2 should always be [[0],[1],[2],[3],[4]] if we have 5 tasks in total. 
             then score2 will always be 0; 
             '''
 
-            # summarize all info and pack them into the queue
-            score = score0 + score1  # total dissimilarity score of all branch out points, score2 is omitted as it is 0
+            # # summarize all info and pack them into the queue
+
+            # # on April 2022, we decided to use similarity score to evaluate a tree, the higher the better
+            score = score0 + score1  # total similarity score of all branch out points, score2 is omitted as it is 0
             model_size = sizeByBlock[0] + len(clusters0) * sizeByBlock[1] \
                          + len(clusters1) * sizeByBlock[2] \
                          + len(tasks) * sizeByBlock[3]  # total model size this tree requires
@@ -547,7 +685,8 @@ def clustering(RSM, N = 5):
 
         # print('\n\n')
 
-        queue.sort(key=lambda x: (x[1], x[0])) # first sort by model_size, then by score
+        # first sort by model size x[1] in ascending order, then by similarity score x[0] in descending order
+        queue.sort(key=lambda x: (x[1], -x[0]))
 
     return queue
 
@@ -573,20 +712,25 @@ def plotQueue(queue, Type = 1):
 
 def optimalTree(queue):
     '''
-    print the optimal tree (with lowest dissimilarity score) for all budgets (all possible model sizes)
+    find out the optimal tree (with highest similarity score) for all budgets (all possible model sizes)
+    each budget (model size) has one optimal tree which has the highest similarity score
     :param queue: queue must have already been sorted - queue.sort(key=lambda x: (x[1], x[0]))
+    :return:
     '''
-    # queue must be sorted by model size and then dissimilarity score
+    # queue must be sorted first by model size (in ascending order) and then by similarity score (in descending order)
     print("Finding the optimal Tree...")
 
     dic = defaultdict(list)
     score, budget, overhead = [], [], []
-    for q in queue:         # q = [dissimilarity score, model size, decomposition detail, switch overhead]
-        if q[1] not in dic: # because queue is sorted, the first tree of a new model_size is the optimal one
-            dic[q[1]].append(q[0])
-            dic[q[1]].append(q[3])
-            dic[q[1]].append(q[2])
+    for q in queue:         # q = [similarity score, model size, decomposition detail, switch overhead]
 
+        # queue is sorted first by model size (in ascending order) and then by similarity score (in descending order)
+        # so, the first tree of a new model_size is the optimal one which has the highest similarity score
+        if q[1] not in dic:
+            dic[q[1]].append(q[0])  # q[0] - similarity score of a tree
+            dic[q[1]].append(q[3])  # q[3] - switching overhead reduction
+            dic[q[1]].append(q[2])  # q[2] - decomposition detail of two middle layers
+                                    # q[1] - model size - as dic's key
             score.append(q[0])
             budget.append(q[1])
             overhead.append(q[3])
@@ -594,8 +738,8 @@ def optimalTree(queue):
     for key, value in dic.items():
         print(key, value)
 
-    # plot score v.s. overhead
-    # first, we normalize the list by max-min normalization
+    # # plot score v.s. overhead
+    # # first, we normalize the list by max-min normalization
     score, overhead = np.array(score), np.array(overhead)
     score = list((score - score.min()) / (score.max() - score.min()))
     overhead = list((overhead - overhead.min()) / (overhead.max() - overhead.min()))
@@ -607,44 +751,63 @@ def optimalTree(queue):
     return score, overhead
 
 
-def CalcSwitchOverhead(queue):
+def CalcSwitchOverheadReduction(queue):
     '''
-    Calculate the switch overhead for each tree in queue
-    switch overhead is calculated based on the number of nodes to be swapped
-    in real implementation, it should be calculated based on the real weight size (e.g. KB) to be swapped
+    Calculate switch overhead reduction for each tree in queue
+    switch overhead reduction has two parts: computational saving in time + weights-reloading saving in time
     :param queue: a list of trees
-    :return: append a switch overhead to each tree, return queue
+    :return: no return, directly append the calculated result to queue at each row
     '''
 
-    N = int(queue[0][2][0].__sizeof__() / 8) # number of tasks
+    N = int(queue[0][2][0].__sizeof__() / 8) # N is the number of tasks
+    # SavingCpt: computational savings w.r.t time
+    # SavingWgt: weights-reloading savings w.r.t time
 
-    # we can use a symmetric matrix to store the task-wise switch overhead
-    # the maximum overhead from one task to another is to switch 3 nodes
-    # so the default total switch overhead for all possible pairs is 3 * the number of total pairs
-    # for N tasks, the number of all pairs is 1+2+...+(N-1) = sum(range(N))
-    # we then iterate the middle layers, if we find two tasks in one cluster, we decrease the overhead by 1
-    # the reminding overhead is the final total switch overhead over all possible pairs
-    overhead = sum(range(N)) * 3
+    '''
+    we can use a symmetric matrix to store the task-wise switch overhead
+    the maximum overhead from one task to another is to switch 3 nodes
+    so the default total switch overhead for all possible pairs is 3 * the number of total pairs
+    for N tasks, the number of all pairs is 1+2+...+(N-1) = sum(range(N))
+    we then iterate the middle layers, if we find two tasks in one cluster, we decrease the overhead by 1
+    the reminding overhead is the final total switch overhead over all possible pairs
+    '''
+
+    cpt_byBlock = [1,2,3,4]  # computational overhead of each block w.r.t time, we have 4 blocks, so it has 4 values
+    wgt_byBlock = [1,2,3,4]  # weight-reloading overhead of each block w.r.t time
+
+    sizeByBlock = get_weightsize_byBlock()
+    wgt_byBlock = [w * 2 / 64000 * 0.6 for w in sizeByBlock] # w is number of params, we use 16bit, so w * 2 is the total byte of memory
+                                                             # based on our hardware experiment, it take 600ms to read 64KB
+    cpt_byBlock = get_ComputationalSavings()
 
     for idx, q in enumerate(queue):
 
+        # an example of q: [0.8002560306341132, 3, [[[0, 1, 2, 3, 4, 5, 6]], [[0, 1, 2, 3, 4, 5, 6]]]]
+
         # reset overhead for each tree
-        overhead = sum(range(N)) * 3
+        SavingWgt, SavingCpt = 0, 0 # reset for each q
 
-        q = q[2]
-        for layer in q:
+        for idx2, layer in enumerate(q[2]): # q contains an optimal decomposition tree's middle two blocks which is q[2]
             for cluster in layer:
-                overhead -= sum(range(len(cluster)))
 
-        queue[idx].append(overhead)
+                # # the decomposition tree only has two middle layers
+                if idx2 == 0: # for the 1st middle layer
+                    SavingCpt = sum(range(len(cluster))) * cpt_byBlock[1]
+                    SavingWgt = sum(range(len(cluster))) * wgt_byBlock[1]
+                elif idx2 == 1:
+                    SavingCpt = sum(range(len(cluster))) * cpt_byBlock[2]
+                    SavingWgt = sum(range(len(cluster))) * wgt_byBlock[1]
+
+
+        queue[idx].append(SavingWgt + SavingCpt) # append the total savings
 
 
 def plotTraderOff_oneTree():
     # plot the tradeoff figure for one case
     RSM = np.load('rsm.npy')
 
-    queue = clustering(RSM, N=7)
-    CalcSwitchOverhead(queue)
+    queue = clustering(RSM, N=5)
+    CalcSwitchOverheadReduction(queue)
     score, overhead = optimalTree(queue)
 
     fontsize = 13
@@ -652,21 +815,21 @@ def plotTraderOff_oneTree():
 
     fig, ax = plt.subplots()
 
-    ax.plot(np.linspace(0, 1, len(score)), score, 'r', label = 'Dissimilarity Score', linewidth = linewidth)
-    ax.plot(np.linspace(0, 1, len(overhead)), overhead, 'b', label = 'Switch Overhead', linewidth = linewidth)
+    ax.plot(np.linspace(0, 1, len(score)), score, 'r', label = 'Similarity score', linewidth = linewidth)
+    ax.plot(np.linspace(0, 1, len(overhead)), overhead, 'b', label = 'Overhead reduction', linewidth = linewidth)
 
-    # plot the intersection point and a vertical line segment
+    # # plot the intersection point and a vertical line segment
     point = (0.22, 0.353) # the coordinates of the intersection point
     # circle = plt.Circle(point, 0.02, color='green')
     # ax.add_patch(circle)
-    ax.plot([point[0], point[0]], [0, point[1]], 'k', linewidth = linewidth, linestyle = 'dotted')
+    # ax.plot([point[0], point[0]], [0, point[1]], 'k', linewidth = linewidth, linestyle = 'dotted')
 
     plt.ylim([0, 1])
     plt.xlim([0, 1])
     ax.legend(loc='right', fontsize=fontsize - 2)
     plt.yticks(fontsize=fontsize)
     plt.xticks(fontsize=fontsize)
-    plt.ylabel('Dissimilarity Score\nand Switch Overhead', fontsize=fontsize)
+    plt.ylabel('Task similarity score\nand Overhead reduction', fontsize=fontsize)
     plt.xlabel('Model Size Budget', fontsize=fontsize)
     plt.title('Normalized Results', fontsize=fontsize)
 
@@ -690,8 +853,8 @@ def plotTradeOff_multiTree():
     RSM = np.load('rsm.npy')
 
     for N in range(4, 8):
-        queue = clustering(RSM, N=N)
-        CalcSwitchOverhead(queue)
+        queue = clustering(RSM, N=N)  # N is the number of tasks
+        CalcSwitchOverheadReduction(queue)
         score, overhead = optimalTree(queue)
 
         plt.plot(np.linspace(0, 1, len(score)), score, 'r')
@@ -699,18 +862,34 @@ def plotTradeOff_multiTree():
     plt.show()
 
 
-###############################
+########################### program execution entry ############################
 
-# for debug, we pre-train all single models in advance
-# so that we do not need train them every time
+
+
+# # for debug, we pre-train all single models in advance
+# # so that we do not need train them every time
 # for i in range(10):
 #     model_train(train=True, chosenType=i)
+
+
+
 
 # # for debug, we calculate RSM once and save it
 # # so that we do not need to recompute every time
 # rsm = RSM_Calc(50)
 # np.save('rsm.npy', rsm)
+# print('RSM saved...')
+
+
+
 # RSM = np.load('rsm.npy')
+# print('RSM reloaded...')
+
+
+
+plotTraderOff_oneTree()
+
+########################### below is debug history ############################
 
 # RSM = np.load('rsm.npy')
 # # start = time.time()
@@ -722,5 +901,11 @@ def plotTradeOff_multiTree():
 # # plotQueue(queue, Type=2)
 # optimalTree(queue)
 
-plotTraderOff_oneTree()
+
+
+
+
+
+
+
 
