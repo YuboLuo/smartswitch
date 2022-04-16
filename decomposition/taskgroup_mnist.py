@@ -603,6 +603,8 @@ def clustering_withBudget_old(RSM, N = 5, Budget = 5):
     print('cnt1 = {}, cnt2 = {}, unnecessary searches ratio = {:.3}'.format(cnt1, cnt2, cnt1/(cnt1 + cnt2) ))
     return queue
 
+
+
 def GetBranchingInfo(branchIdx_inRSM = [0, 2, 4]):
     '''
     to be deleted
@@ -702,13 +704,13 @@ def clustering(RSM, Idx, N = 5):
 
 def plotQueue(queue, Type = 1):
     '''
-    Plot how dissimilarity scores vary among all possible budgets
+    Plot how similarity scores vary among all possible budgets
     :param queue: queue must be first processed by CalcSwitchOverhead if Type = 2
     :param Type: 1 - plot dissimilarity score; 2 - plot switch overhead
     :return:
     '''
     dic = defaultdict(list)
-    for q in queue:      # q = [dissimilarity score, model size, decomposition detail, switch overhead]
+    for q in queue:      # q = [similarity score, model size, decomposition detail, switch overhead]
         if Type == 1:
             dic[q[1]].append(q[0])
         else:
@@ -717,6 +719,9 @@ def plotQueue(queue, Type = 1):
     for idx, key in enumerate(dic.keys()):
         plt.boxplot(dic[key], positions=[idx], showfliers=False)  # do not plot outliers
 
+    plt.title('SavingCpt  -  Idx=[1,2,4]')
+    plt.ylabel('Overhead reduction in time (s)')
+    plt.xlabel('Budget')
     plt.show()
 
 
@@ -732,6 +737,8 @@ def optimalTree(queue):
 
     dic = defaultdict(list)
     score, budget, overhead = [], [], []
+
+    # # first, we find the highest overhead reduction for each budget
     for q in queue:         # q = [similarity score, model size, decomposition detail, switch overhead]
 
         # queue is sorted first by model size (in ascending order) and then by similarity score (in descending order)
@@ -741,9 +748,27 @@ def optimalTree(queue):
             dic[q[1]].append(q[3])  # q[3] - switching overhead reduction
             dic[q[1]].append(q[2])  # q[2] - decomposition detail of two middle layers
                                     # q[1] - model size - as dic's key
-            score.append(q[0])
+            # score.append(q[0])
             budget.append(q[1])
             overhead.append(q[3])
+
+    # # second, we find the highest similarity score for each budget
+    # # but we have to first re-sort queue
+    # # first sort by model size x[1] in ascending order, then by overhead reduction x[3] in descending order
+    queue.sort(key=lambda x: (x[1], -x[3]))
+
+    dic = defaultdict(list)
+    score = []
+    for q in queue:
+        if q[1] not in dic:
+            dic[q[1]].append(q[0])  # q[0] - similarity score of a tree
+            dic[q[1]].append(q[3])  # q[3] - switching overhead reduction
+            dic[q[1]].append(q[2])  # q[2] - decomposition detail of two middle layers
+                                    # q[1] - model size - as dic's key
+            score.append(q[0])
+            # budget.append(q[1])
+
+
 
     for key, value in dic.items():
         print(key, value)
@@ -764,17 +789,19 @@ def optimalTree(queue):
 
     return score, overhead, budget
 
-def CalcSwitchOverheadReduction(queue, Idx):
+def CalcSwitchOverheadReduction(queue, Idx, reduction = 0):
     '''
     Calculate switch overhead reduction for each tree in queue
     switch overhead reduction has two parts: computational saving in time + weights-reloading saving in time
     :param queue: a list of trees
+    :param Idx: location/index of the three branch out points, w.r.t RSM
     :return: no return, directly append the calculated result to queue at each row
     '''
 
-    # N = int(queue[0][2][0].__sizeof__() / 8) # N is the number of tasks
 
     '''
+    [an old way of calculating switching overhead, it does not apply anymore. But the background logic is the same.]
+    [help me understand how the total switching overhead reduction is calculated now]
     we can use a symmetric matrix to store the task-wise switch overhead
     the maximum overhead from one task to another is to switch 3 nodes
     so the default total switch overhead for all possible pairs is 3 * the number of total pairs
@@ -803,24 +830,31 @@ def CalcSwitchOverheadReduction(queue, Idx):
             for cluster in layer:
 
                 # # the decomposition tree only has two middle layers
-                if idx2 == 0: # for the 1st middle layer
+                if idx2 == 0:  # for the 1st middle layer
                     SavingCpt += sum(range(len(cluster))) * cpt_byBlock[1]
                     SavingWgt += sum(range(len(cluster))) * wgt_byBlock[1]
-                elif idx2 == 1:
-                    SavingCpt += sum(range(len(cluster))) * cpt_byBlock[2]
-                    SavingWgt += sum(range(len(cluster))) * wgt_byBlock[1]
+                elif idx2 == 1:  # for the 2nd middle layer
+                    SavingCpt += sum(range(len(cluster))) * cpt_byBlock[2] * 3
+                    SavingWgt += sum(range(len(cluster))) * wgt_byBlock[2]
 
 
-        queue[idx].append(SavingWgt + SavingCpt) # append the total savings
+        # queue[idx].append(SavingWgt + SavingCpt) # append the total savings
+
+        if reduction == 0:
+            queue[idx].append(SavingWgt + SavingCpt)
+        elif reduction == 1:
+            queue[idx].append(SavingWgt)  # for deciding the budget using cross point of reduction and similarity
+        elif reduction == 2:
+            queue[idx].append(SavingCpt)  # for deciding locations of the three branch out points
 
 
-def plotTraderOff_oneTree(Idx):
-    # plot the tradeoff figure for one case
+def plotTraderOff_oneTree(Idx, N=5):
+    # plot the tradeoff between overhead reduction and similarity score to decide budget
     RSM = np.load('rsm.npy')
     print('Idx = {}'.format(Idx))
 
-    queue = clustering(RSM, Idx, N=5)
-    CalcSwitchOverheadReduction(queue, Idx)
+    queue = clustering(RSM, Idx, N=N)  # group tasks according to similarity score
+    CalcSwitchOverheadReduction(queue, Idx, reduction=1)  # calculate switching overhead reduction for each tree in q
     score, overhead, budget = optimalTree(queue)
 
     fontsize = 13
@@ -839,10 +873,10 @@ def plotTraderOff_oneTree(Idx):
 
 
     # # plot the intersection point and a vertical line segment
-    point = (0.229, 0.575) # the coordinates of the intersection point
+    point = (0.197, 0.498) # the coordinates of the intersection point
     # circle = plt.Circle(point, 0.02, color='green')
     # ax.add_patch(circle)
-    # ax.plot([point[0], point[0]], [0, point[1]], 'k', linewidth=linewidth, linestyle='dotted') # plot a vertical line
+    ax.plot([point[0], point[0]], [0, point[1]], 'k', linewidth=linewidth, linestyle='dotted') # plot a vertical line
 
     plt.ylim([0, 1])
     plt.xlim([0, 1])
@@ -910,7 +944,7 @@ def plotTradeOff_multiTree():
 
 
 
-plotTraderOff_oneTree(Idx=[0,2,4])
+# plotTraderOff_oneTree(Idx=[0,2,4], N=7)
 
 ########################### below is debug history ############################
 
@@ -924,11 +958,56 @@ plotTraderOff_oneTree(Idx=[0,2,4])
 # # plotQueue(queue, Type=2)
 # optimalTree(queue)
 
+Idx = (1,2,4)
+N = 7
+RSM = np.load('rsm.npy')
+print('Idx = {}'.format(Idx))
+queue = clustering(RSM, Idx, N=N)  # group tasks according to similarity score
+CalcSwitchOverheadReduction(queue, Idx)
+plotQueue(queue, Type=2)
 
+# # first sort by model size x[1] in ascending order, then by overhead reduction x[3] in descending order
+queue.sort(key=lambda x: (x[1], -x[3]))
+dic = defaultdict(int)
+for q in queue:
+    if q[1] not in dic:
+        dic[q[1]] = q[3]  # log the max reduction of each budget
 
+def findLocactionOfBP(N=7):
+    '''
+    find the locations of the three branch out points
 
+    :return: e.g. Idx = [0,2,4]
+    '''
 
+    RSM = np.load('rsm.npy')
 
+    for Idx in itertools.combinations([i for i in range(5)], 3):
+        queue = clustering(RSM, Idx, N=N)  # group tasks according to similarity score
+        CalcSwitchOverheadReduction(queue, Idx, reduction=2)  # calculate overhead reduction, use SavingCpt
 
+        # # first sort by model size x[1] in ascending order, then by overhead reduction x[3] in descending order
+        queue.sort(key=lambda x: (x[1], -x[3]))
 
+        dic = defaultdict(int)
+        for q in queue:
+            if q[1] not in dic:  # q[1] is model size, q[3] is overhead reduction
+                dic[q[1]] = q[3]  # log the max reduction of each budget
 
+        print(Idx, sum(dic.values()))
+
+def fun(Idx):
+    RSM = np.load('rsm.npy')
+
+    queue = clustering(RSM, Idx, N=N)  # group tasks according to similarity score
+    CalcSwitchOverheadReduction(queue, Idx, reduction=2)  # calculate overhead reduction, use SavingCpt
+
+    # # first sort by model size x[1] in ascending order, then by overhead reduction x[3] in descending order
+    queue.sort(key=lambda x: (x[1], -x[3]))
+
+    dic = defaultdict(int)
+    for q in queue:
+        if q[1] not in dic:  # q[1] is model size, q[3] is overhead reduction
+            dic[q[1]] = q[3]  # log the max reduction of each budget
+
+    print(Idx, sum(dic.values()))
