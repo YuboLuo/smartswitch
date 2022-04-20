@@ -20,13 +20,14 @@ width = 0.13
 
 fig, ax = plt.subplots()
 
+ax.grid(axis='y', linestyle=':', zorder = 0)
 
-rects11 = ax.bar(x - 2.5 * width, values[0,:], width, label='L1-Conv',color='#1F77B4')
-rects14 = ax.bar(x + 0.5 * width, values[3,:], width, label='L4-FC',color='#ffd1a9')
-rects12 = ax.bar(x - 1.5 * width, values[1,:], width, label='L2-Conv',color='#629fca')
-rects15 = ax.bar(x + 1.5 * width, values[4,:], width, label='L5-FC',color='#ffa352')
-rects13 = ax.bar(x - 0.5 * width, values[2,:], width, label='L3-Conv',color='#bbd6e8')
-rects16 = ax.bar(x + 2.5 * width, values[5,:], width, label='L6-FC',color='#f47200')
+rects11 = ax.bar(x - 2.5 * width, values[0,:], width*0.8, label='L1-Conv',color='#1F77B4', edgecolor='#353337', zorder = 2)
+rects14 = ax.bar(x + 0.5 * width, values[3,:], width*0.8, label='L4-FC',color='#ffd1a9', edgecolor='#353337', zorder = 2)
+rects12 = ax.bar(x - 1.5 * width, values[1,:], width*0.8, label='L2-Conv',color='#629fca', edgecolor='#353337', zorder = 2)
+rects15 = ax.bar(x + 1.5 * width, values[4,:], width*0.8, label='L5-FC',color='#ffa352', edgecolor='#353337', zorder = 2)
+rects13 = ax.bar(x - 0.5 * width, values[2,:], width*0.8, label='L3-Conv',color='#bbd6e8', edgecolor='#353337', zorder = 2)
+rects16 = ax.bar(x + 2.5 * width, values[5,:], width*0.8, label='L6-FC',color='#f47200', edgecolor='#353337', zorder = 2)
 
 ax.set_xticklabels(['MNIST','CIFAR-10','SVHN','GTSBR'])
 plt.xticks( range(len(x)),fontsize=fontsize, rotation=0)
