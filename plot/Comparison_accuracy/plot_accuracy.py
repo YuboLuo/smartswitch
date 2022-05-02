@@ -41,7 +41,7 @@ plt.xticks( range(len(x)),fontsize=fontsize, rotation=0)
 legend = plt.legend(bbox_to_anchor=(0, 0.98, 1.,1), loc=3, shadow=False,mode='expand',ncol=3,fontsize='large')
 
 plt.xlabel('Datasets', fontsize=fontsize)
-plt.ylabel('Accuracy',fontsize=fontsize)
+plt.ylabel('Accuracy (%)',fontsize=fontsize)
 
 
 

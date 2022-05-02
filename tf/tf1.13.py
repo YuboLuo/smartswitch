@@ -23,15 +23,15 @@ datasets = ['mnist', 'fmnist', 'cifar10', 'gtsrb', 'svhn', 'esc10', 'obs', 'gsc'
 
 
 
-name_dataset = datasets[7]
+name_dataset = datasets[9]
 
 with tf.Session() as sess:
 
-    # saver = tf.train.import_meta_graph('../../WeightSeparation/{}/{}.meta'.format(name_dataset,name_dataset))  # the downloaded repository is in WeightSeparation folder
-    # saver.restore(sess, '../../WeightSeparation/{}/{}'.format(name_dataset,name_dataset))
+    saver = tf.train.import_meta_graph('../../WeightSeparation/{}/{}.meta'.format(name_dataset,name_dataset))  # the downloaded repository is in WeightSeparation folder
+    saver.restore(sess, '../../WeightSeparation/{}/{}'.format(name_dataset,name_dataset))
 
-    saver = tf.train.import_meta_graph('../../NeuralWeightVirtualization/{}/{}.meta'.format(name_dataset,name_dataset))  # the downloaded repository is in WeightSeparation folder
-    saver.restore(sess, '../../NeuralWeightVirtualization/{}/{}'.format(name_dataset,name_dataset))
+    # saver = tf.train.import_meta_graph('../../NeuralWeightVirtualization/{}/{}.meta'.format(name_dataset,name_dataset))  # the downloaded repository is in WeightSeparation folder
+    # saver.restore(sess, '../../NeuralWeightVirtualization/{}/{}'.format(name_dataset,name_dataset))
 
     t_vars = tf.trainable_variables()  # obtain trainable variables
     slim.model_analyzer.analyze_vars(t_vars, print_info=True)  # print model summary
