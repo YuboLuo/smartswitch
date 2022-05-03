@@ -67,31 +67,46 @@ def cal_Matrix(decomposition = [   [[0, 1, 2, 3], [4]], [[0], [2], [1, 3], [4]] 
                         Matrix[i][j] = Matrix[j][i] = idx + 1
     return Matrix
 
-CostPerBlock_inference = get_CostPerBlock(CostPerLayer_inference, [0,2,4])
-CostPerBlock_reload = get_CostPerBlock(CostPerLayer_reload, [0,2,4])
 
-mat = cal_Matrix()
+
+
+decompositions = [ [[[0], [1, 2, 3], [4]], [[0], [1, 2, 3], [4]]], [[[1], [0, 2, 3, 4]], [[1], [3], [0, 2, 4]]], [[[3], [0, 1, 2, 4]], [[3], [0], [1, 2, 4]]], [[[3], [0, 1, 2, 4]], [[3], [0], [1, 2, 4]]], [[[3], [0, 1, 2, 4]], [[3], [1], [0, 2, 4]]]  ]
+
+
+dataset = 0 # which dataset to use
+BranchLoc = [0,2,4]  # for dataset = 4, BranchLoc = [0,2,3], otherwise BranchLoc = [0,2,4]
+
+# mat = cal_Matrix(decomposition = decompositions[dataset]) # for SmartSwitch
+mat = cal_Matrix(decomposition = [[[0],[1],[2],[3],[4]], [[0],[1],[2],[3],[4]]]) # for MTL
+
 N = mat.shape[0]
-dataset = 4
 
+CostPerBlock_inference = get_CostPerBlock(CostPerLayer_inference, BranchLoc)
+CostPerBlock_reload = get_CostPerBlock(CostPerLayer_reload, BranchLoc)
 order = [i for i in range(N)]
 
 for iter in range(20):
 
     random.shuffle(order)
-    cost = 0
+    cost, cost_history = 0, []
     transition = []
+
     order_ext = order + [order[0]]  #  we need to append
+
+    # order_ext = order
+    # cost += sum(CostPerBlock_inference[dataset])
+    # cost += sum(CostPerBlock_reload[dataset])
+
     for t_curr, t_next in zip(order_ext, order_ext[1:]):
         SharedDepth = mat[t_curr][t_next]
         transition.append(SharedDepth)
         cost += sum(CostPerBlock_inference[dataset][SharedDepth+1:])
         cost += sum(CostPerBlock_reload[dataset][SharedDepth+1:])
 
+    cost_history.append(cost)
     print(iter, order, transition, cost)
 
-
-
+print(min(cost_history))
 
 
 
