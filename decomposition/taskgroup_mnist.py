@@ -697,8 +697,8 @@ def clustering(RSM, Idx, N = 5):
 
         # print('\n\n')
 
-        # first sort by model size x[1] in ascending order, then by similarity score x[0] in descending order
-        queue.sort(key=lambda x: (x[1], -x[0]))
+    # first sort by model size x[1] in ascending order, then by similarity score x[0] in descending order
+    queue.sort(key=lambda x: (x[1], -x[0]))
 
     return queue
 
@@ -939,18 +939,18 @@ def plotTradeOff_multiTree():
 
 
 
-# RSM = np.load('rsm.npy')
-# print('RSM reloaded...')
+RSM = np.load('rsm.npy')
+print('RSM reloaded...')
 
 
 
-# plotTraderOff_oneTree(Idx=[0,2,4], N=7)
+plotTraderOff_oneTree(Idx=[0,2,4], N=10)
 
 ########################### below is debug history ############################
 
 # RSM = np.load('rsm.npy')
 # # start = time.time()
-# # queue = clustering_withBudget(RSM, N=7, Budget=6)
+# # queue = clustering_withBudget(RSM, N=7, Budget=6)xky
 # # end = time.time()
 # # print('Time spent: {} second'.format(end - start))
 # queue = clustering(RSM, N=5)
@@ -958,20 +958,20 @@ def plotTradeOff_multiTree():
 # # plotQueue(queue, Type=2)
 # optimalTree(queue)
 
-Idx = (1,2,4)
-N = 7
-RSM = np.load('rsm.npy')
-print('Idx = {}'.format(Idx))
-queue = clustering(RSM, Idx, N=N)  # group tasks according to similarity score
-CalcSwitchOverheadReduction(queue, Idx)
-plotQueue(queue, Type=2)
-
-# # first sort by model size x[1] in ascending order, then by overhead reduction x[3] in descending order
-queue.sort(key=lambda x: (x[1], -x[3]))
-dic = defaultdict(int)
-for q in queue:
-    if q[1] not in dic:
-        dic[q[1]] = q[3]  # log the max reduction of each budget
+# Idx = (1,2,4)
+# N = 7
+# RSM = np.load('rsm.npy')
+# print('Idx = {}'.format(Idx))
+# queue = clustering(RSM, Idx, N=N)  # group tasks according to similarity score
+# CalcSwitchOverheadReduction(queue, Idx)
+# plotQueue(queue, Type=2)
+#
+# # # first sort by model size x[1] in ascending order, then by overhead reduction x[3] in descending order
+# queue.sort(key=lambda x: (x[1], -x[3]))
+# dic = defaultdict(int)
+# for q in queue:
+#     if q[1] not in dic:
+#         dic[q[1]] = q[3]  # log the max reduction of each budget
 
 def findLocactionOfBP(N=7):
     '''
