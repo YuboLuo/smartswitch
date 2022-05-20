@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import itertools, more_itertools
 import time
 
+import xlsxwriter
 
 ##################################################################################################################
 # helper functions
@@ -88,7 +89,7 @@ def get_ComputationalSavings(Idx):
     '''
 
     # # layer-wise inference time array, this array comes from our experiment results
-    timesavingsByLayer = [0.71, 1.97, 0.62, 0.12, 0.92, 0.07]
+    timesavingsByLayer = [0.74, 3.81, 1.18, 0.073, 0.05, 0.008]
 
     timesavingsByBlock = get_segment_byBlock(timesavingsByLayer,Idx=Idx)
 
@@ -866,6 +867,25 @@ def plotTraderOff_oneTree(Idx, N=5):
     ax.plot(x, score, 'r', label = 'Similarity score', linewidth = linewidth)
     ax.plot(x, overhead, 'b', label = 'Overhead reduction', linewidth = linewidth)
 
+    ##############################################
+    # ### write trade off data into excel file
+    workbook = xlsxwriter.Workbook('tradeoff.xlsx')
+    worksheet = workbook.add_worksheet()
+    # Start from the first cell. Rows and columns are zero indexed.
+
+    row, col = 1, 0
+    # Iterate over the data and write it out row by row.
+    for s, o, b in zip(score, overhead, budget):
+        worksheet.write(row, col, s)
+        worksheet.write(row, col + 1, o)
+        worksheet.write(row, col + 2, b)
+        row += 1
+    worksheet.write(0, 0, "Score")
+    worksheet.write(0, 1, "Overhead")
+    worksheet.write(0, 2, "Budget")
+    workbook.close()
+    ################################################
+
     print('\n\n*********************************')
     print('X-axis - Budget')
     for i in range(len(x)):
@@ -903,20 +923,39 @@ def plotTraderOff_oneTree(Idx, N=5):
     fig.show()
     fig.savefig("algo1_tradeoff.pdf")
 
-def plotTradeOff_multiTree():
-    # plot the tradeoff figure for multiple cases in one plot which has different numbers of tasks
+def findLocactionOfBP(N=7, LayerNum=5, BranchNum=3):
+    '''
+    find the locations of the 'BranchNum' branch out points out of the 'LayerNum' possible branch points
+    e.g., in NWS, most networks have 6 layers, their LayerNum should be 5 as there are 5 places where we can branch
+                  we use three branches so the BranchNum is 3
 
+    :return: e.g. Idx = [0,1,4]
+    '''
 
     RSM = np.load('rsm.npy')
 
-    for N in range(4, 8):
-        queue = clustering(RSM, N=N)  # N is the number of tasks
-        CalcSwitchOverheadReduction(queue)
-        score, overhead = optimalTree(queue)
+    Max_value, Max_loc = 0, 0
+    for Idx in itertools.combinations([i for i in range(LayerNum)], BranchNum):
+        queue = clustering(RSM, Idx, N=N)  # group tasks according to similarity score
+        CalcSwitchOverheadReduction(queue, Idx, reduction=2)  # calculate overhead reduction, use SavingCpt
 
-        plt.plot(np.linspace(0, 1, len(score)), score, 'r')
-        plt.plot(np.linspace(0, 1, len(overhead)), overhead, 'b')
-    plt.show()
+        # # first sort by model size x[1] in ascending order, then by overhead reduction x[3] in descending order
+        queue.sort(key=lambda x: (x[1], -x[3]))
+
+        dic = defaultdict(int)
+        for q in queue:
+            if q[1] not in dic:  # q[1] is model size, q[3] is overhead reduction
+                dic[q[1]] = q[3]  # log the max reduction of each budget
+
+        sum_reduction = sum(dic.values())
+        print(Idx, sum_reduction)
+
+        if sum_reduction > Max_value:
+            Max_value = sum_reduction
+            Max_loc = Idx
+
+    print('The loc with max value is: {}'.format(Max_loc))
+    return Max_loc
 
 
 ########################### program execution entry ############################
@@ -939,12 +978,9 @@ def plotTradeOff_multiTree():
 
 
 
-RSM = np.load('rsm.npy')
-print('RSM reloaded...')
-
-
-
-plotTraderOff_oneTree(Idx=[0,2,4], N=10)
+# RSM = np.load('rsm.npy')
+# print('RSM reloaded...')
+# plotTraderOff_oneTree(Idx=[0,2,4], N=7)
 
 ########################### below is debug history ############################
 
@@ -973,28 +1009,7 @@ plotTraderOff_oneTree(Idx=[0,2,4], N=10)
 #     if q[1] not in dic:
 #         dic[q[1]] = q[3]  # log the max reduction of each budget
 
-def findLocactionOfBP(N=7):
-    '''
-    find the locations of the three branch out points
 
-    :return: e.g. Idx = [0,2,4]
-    '''
-
-    RSM = np.load('rsm.npy')
-
-    for Idx in itertools.combinations([i for i in range(5)], 3):
-        queue = clustering(RSM, Idx, N=N)  # group tasks according to similarity score
-        CalcSwitchOverheadReduction(queue, Idx, reduction=2)  # calculate overhead reduction, use SavingCpt
-
-        # # first sort by model size x[1] in ascending order, then by overhead reduction x[3] in descending order
-        queue.sort(key=lambda x: (x[1], -x[3]))
-
-        dic = defaultdict(int)
-        for q in queue:
-            if q[1] not in dic:  # q[1] is model size, q[3] is overhead reduction
-                dic[q[1]] = q[3]  # log the max reduction of each budget
-
-        print(Idx, sum(dic.values()))
 
 def fun(Idx):
     RSM = np.load('rsm.npy')
