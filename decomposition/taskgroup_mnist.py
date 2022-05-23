@@ -16,6 +16,7 @@ import time
 
 import xlsxwriter
 
+
 ##################################################################################################################
 # helper functions
 
@@ -35,7 +36,7 @@ def get_possible_branch_locations():
     list = []
     for idx, layer in enumerate(model.layers):
 
-        if idx == len(model.layers) - 1: # we do not branch out on the final layer
+        if idx == len(model.layers) - 1:  # we do not branch out on the final layer
             continue
 
         if 'input' in layer.name:  # we do not branch out on input layer
@@ -44,15 +45,15 @@ def get_possible_branch_locations():
         # # we assume layers (e.g. MaxPooling, Flatten) other than Conv and Dense will only exist after Conv layers
         # # and Dense layers are all consecutively connected to each other
         if ('conv' in model.layers[idx].name and 'conv' in model.layers[idx + 1].name) or \
-            ('conv' not in model.layers[idx].name and 'conv' in model.layers[idx + 1].name) or \
-            ('conv' not in model.layers[idx].name and 'dense' in model.layers[idx + 1].name) or \
-            ('dense' in model.layers[idx].name):
-
+                ('conv' not in model.layers[idx].name and 'conv' in model.layers[idx + 1].name) or \
+                ('conv' not in model.layers[idx].name and 'dense' in model.layers[idx + 1].name) or \
+                ('dense' in model.layers[idx].name):
             list.append(idx)
 
     return list
 
-def get_segment_byBlock(data, Idx = [0, 1, 4]):
+
+def get_segment_byBlock(data, Idx=[0, 1, 4]):
     '''
     segment data (layer-wise network overhead savings) into four parts by the three branch out points
     :param data: layer-wise network overhead savings, e.g., weight-reloading savings, computational savings
@@ -62,12 +63,13 @@ def get_segment_byBlock(data, Idx = [0, 1, 4]):
     '''
 
     # Idx = branchIdx_inRSM  # use a shorter name
-    segmented = [sum(data[:Idx[0]+1]),           # block_0 - always shared by all tasks
-                   sum(data[Idx[0]+1:Idx[1]+1]),   # block_1
-                   sum(data[Idx[1]+1:Idx[2]+1]),   # block_2
-                   sum(data[Idx[2]+1:])]           # block_3
+    segmented = [sum(data[:Idx[0] + 1]),  # block_0 - always shared by all tasks
+                 sum(data[Idx[0] + 1:Idx[1] + 1]),  # block_1
+                 sum(data[Idx[1] + 1:Idx[2] + 1]),  # block_2
+                 sum(data[Idx[2] + 1:])]  # block_3
 
     return segmented
+
 
 def get_weightsize_byBlock(Idx):
     '''
@@ -83,35 +85,44 @@ def get_weightsize_byBlock(Idx):
 
     return sizeByBlock
 
+
 def get_ComputationalSavings(Idx):
     '''
     get block-wise computational savings w.r.t time
     '''
 
     # # layer-wise inference time array, this array comes from our experiment results
-    timesavingsByLayer = [0.74, 3.81, 1.18, 0.073, 0.05, 0.008]
+    # timesavingsByLayer = [0.74, 3.81, 1.18, 0.073, 0.05, 0.008]  # MNIST
+    # timesavingsByLayer = [2.57, 5.25, 1.85, 0.048, 0.042, 0.009]  # CIFAR10
+    # timesavingsByLayer = [2.57, 5.25, 1.85, 0.048, 0.042, 0.009]  # SVHN
+    # timesavingsByLayer = [2.6,  5.28, 1.86, 0.048, 0.041, 0.004]  # GTSRB
+    timesavingsByLayer = [1.3,  3.01, 0.014, 0.017, 0.006]  # GSC
 
-    timesavingsByBlock = get_segment_byBlock(timesavingsByLayer,Idx=Idx)
+
+    timesavingsByBlock = get_segment_byBlock(timesavingsByLayer, Idx=Idx)
 
     return timesavingsByBlock
+
 
 def ascending(array):
     '''
     make array strictly ascending
     '''
-    for i in range(1,len(array)):
+    for i in range(1, len(array)):
         if array[i] < array[i - 1]:
-            array[i] = array[i -1]
+            array[i] = array[i - 1]
     return array
+
 
 def descending(array):
     '''
     make array strictly descending
     '''
-    for i in range(1,len(array)):
+    for i in range(1, len(array)):
         if array[i] > array[i - 1]:
-            array[i] = array[i -1]
+            array[i] = array[i - 1]
     return array
+
 
 ##################################################################################################################
 
@@ -342,7 +353,7 @@ def ScoreCalc(clusters, depth, RSM):
     return 1 - tobeAveraged / len(clusters)
 
 
-def weak_compositions(boxes, balls, parent=tuple(), depth = 0, constraint = [float('inf')] * 30):
+def weak_compositions(boxes, balls, parent=tuple(), depth=0, constraint=[float('inf')] * 30):
     '''
     when we branch out from layer L to layer L + 1, for the partition at layer L, it is easy
     you can just use more_itertools.set_partitions which allows you to specify the number of partitions you want
@@ -385,10 +396,10 @@ def weak_compositions(boxes, balls, parent=tuple(), depth = 0, constraint = [flo
     if boxes > 1:
         for i in range(1, balls):  # modified the original range(balls + 1), to eliminate 0 value
 
-            if balls - i > constraint[depth]: # apply constraint for all non-final depth in recursion
+            if balls - i > constraint[depth]:  # apply constraint for all non-final depth in recursion
                 continue
 
-            if depth == max_depth - 2 and i > constraint[-1]: # apply constraint for the final depth in recursion
+            if depth == max_depth - 2 and i > constraint[-1]:  # apply constraint for the final depth in recursion
                 continue
 
             for x in weak_compositions(boxes - 1, i, parent + (balls - i,), depth + 1, constraint=constraint):
@@ -435,7 +446,8 @@ def clustering_withBudget(RSM, N=5, Budget=5):
 
     cnt1 = cnt2 = 0
     for arrange in arrangement:
-        for clusters0 in more_itertools.set_partitions(tasks, k=arrange[0]):  # arrange[0]: the number of nodes for 1st layer
+        for clusters0 in more_itertools.set_partitions(tasks,
+                                                       k=arrange[0]):  # arrange[0]: the number of nodes for 1st layer
 
             ''' Variable Name Explanation 
             clustersX, depthX, scoreX: 'X' means the Xth branch out point
@@ -501,7 +513,7 @@ def clustering_withBudget(RSM, N=5, Budget=5):
     return queue
 
 
-def clustering_withBudget_old(RSM, N = 5, Budget = 5):
+def clustering_withBudget_old(RSM, N=5, Budget=5):
     '''
     enumerate all possible trees under a budget
     we only enumerate trees that use the maximum possible budget which is no greater than the given input Budget
@@ -527,7 +539,7 @@ def clustering_withBudget_old(RSM, N = 5, Budget = 5):
         2nd layer: flexible, to be determined
         3th layer: len(task) nodes because you must branch into individual task at this layer
     for a given budget, we enumerate all possible arrangements for the 1st & 2nd layers
-    
+
     Constraints: 
         the budget nodes of the 1st layer should be no greater than that of the 2nd layer
         the budget nodes of all layers should be less than the number of tasks
@@ -539,7 +551,8 @@ def clustering_withBudget_old(RSM, N = 5, Budget = 5):
 
     cnt1 = cnt2 = 0
     for arrange in arrangement:
-        for clusters0 in more_itertools.set_partitions(tasks, k = arrange[0]):  # arrange[0]: the number of nodes for 1st layer
+        for clusters0 in more_itertools.set_partitions(tasks,
+                                                       k=arrange[0]):  # arrange[0]: the number of nodes for 1st layer
 
             ''' Variable Name Explanation 
             clustersX, depthX, scoreX: 'X' means the Xth branch out point
@@ -555,11 +568,8 @@ def clustering_withBudget_old(RSM, N = 5, Budget = 5):
             # print(clusters0)
             # print('--->')
 
-
             for clusters1 in itertools.product(*[partition(cluster) for cluster in clusters0]):
-            # for clusters1 in itertools.product(*[more_itertools.set_partitions(cluster, k = k) for cluster, k in zip(clusters0, decompose)]):
-
-
+                # for clusters1 in itertools.product(*[more_itertools.set_partitions(cluster, k = k) for cluster, k in zip(clusters0, decompose)]):
 
                 '''
                 we use itertools.product to output all combinations of possible subtrees
@@ -600,13 +610,12 @@ def clustering_withBudget_old(RSM, N = 5, Budget = 5):
 
             # print('\n\n')
 
-            queue.sort(key=lambda x: (x[1], x[0])) # first sort by model_size, then by score
-    print('cnt1 = {}, cnt2 = {}, unnecessary searches ratio = {:.3}'.format(cnt1, cnt2, cnt1/(cnt1 + cnt2) ))
+            queue.sort(key=lambda x: (x[1], x[0]))  # first sort by model_size, then by score
+    print('cnt1 = {}, cnt2 = {}, unnecessary searches ratio = {:.3}'.format(cnt1, cnt2, cnt1 / (cnt1 + cnt2)))
     return queue
 
 
-
-def GetBranchingInfo(branchIdx_inRSM = [0, 2, 4]):
+def GetBranchingInfo(branchIdx_inRSM=[0, 2, 4]):
     '''
     to be deleted
     :param branchIdx_inRSM: we have 3 branch out points, branchIdx has the index of the 3 branch out points w.r.t RSM
@@ -616,9 +625,9 @@ def GetBranchingInfo(branchIdx_inRSM = [0, 2, 4]):
     # get the weight size of each layer
     model = model_train(train=False)
 
-
     possible_branchLoc = get_possible_branch_locations()  # get the index of possible branch out locations
-    branchIdx_inLayer = [possible_branchLoc[idx] for idx in branchIdx_inRSM] # index of the three branch out points w.r.t model.layers
+    branchIdx_inLayer = [possible_branchLoc[idx] for idx in
+                         branchIdx_inRSM]  # index of the three branch out points w.r.t model.layers
 
     # # trainable variables do not contain MaxPooling and Flatten layers
     # # trainable variables only contain Conv and Dense layer
@@ -632,12 +641,7 @@ def GetBranchingInfo(branchIdx_inRSM = [0, 2, 4]):
     # # weight-reloading savings
 
 
-
-
-
-
-
-def clustering(RSM, Idx, N = 5):
+def clustering(RSM, Idx, N=5):
     '''
     enumerate all possible trees and calculate the similarity score for each tree
     :param RSM: pre-computed Representation Similarity Matrix - the paper calls it task affinity tensor A
@@ -703,7 +707,8 @@ def clustering(RSM, Idx, N = 5):
 
     return queue
 
-def plotQueue(queue, Type = 1):
+
+def plotQueue(queue, Type=1):
     '''
     Plot how similarity scores vary among all possible budgets
     :param queue: queue must be first processed by CalcSwitchOverhead if Type = 2
@@ -711,7 +716,7 @@ def plotQueue(queue, Type = 1):
     :return:
     '''
     dic = defaultdict(list)
-    for q in queue:      # q = [similarity score, model size, decomposition detail, switch overhead]
+    for q in queue:  # q = [similarity score, model size, decomposition detail, switch overhead]
         if Type == 1:
             dic[q[1]].append(q[0])
         else:
@@ -740,7 +745,7 @@ def optimalTree(queue):
     score, budget, overhead = [], [], []
 
     # # first, we find the highest overhead reduction for each budget
-    for q in queue:         # q = [similarity score, model size, decomposition detail, switch overhead]
+    for q in queue:  # q = [similarity score, model size, decomposition detail, switch overhead]
 
         # queue is sorted first by model size (in ascending order) and then by similarity score (in descending order)
         # so, the first tree of a new model_size is the optimal one which has the highest similarity score
@@ -748,7 +753,7 @@ def optimalTree(queue):
             dic[q[1]].append(q[0])  # q[0] - similarity score of a tree
             dic[q[1]].append(q[3])  # q[3] - switching overhead reduction
             dic[q[1]].append(q[2])  # q[2] - decomposition detail of two middle layers
-                                    # q[1] - model size - as dic's key
+            # q[1] - model size - as dic's key
             # score.append(q[0])
             budget.append(q[1])
             overhead.append(q[3])
@@ -765,11 +770,9 @@ def optimalTree(queue):
             dic[q[1]].append(q[0])  # q[0] - similarity score of a tree
             dic[q[1]].append(q[3])  # q[3] - switching overhead reduction
             dic[q[1]].append(q[2])  # q[2] - decomposition detail of two middle layers
-                                    # q[1] - model size - as dic's key
+            # q[1] - model size - as dic's key
             score.append(q[0])
             # budget.append(q[1])
-
-
 
     for key, value in dic.items():
         print(key, value)
@@ -790,7 +793,8 @@ def optimalTree(queue):
 
     return score, overhead, budget
 
-def CalcSwitchOverheadReduction(queue, Idx, reduction = 0):
+
+def CalcSwitchOverheadReduction(queue, Idx, reduction=0):
     '''
     Calculate switch overhead reduction for each tree in queue
     switch overhead reduction has two parts: computational saving in time + weights-reloading saving in time
@@ -798,7 +802,6 @@ def CalcSwitchOverheadReduction(queue, Idx, reduction = 0):
     :param Idx: location/index of the three branch out points, w.r.t RSM
     :return: no return, directly append the calculated result to queue at each row
     '''
-
 
     '''
     [an old way of calculating switching overhead, it does not apply anymore. But the background logic is the same.]
@@ -815,8 +818,9 @@ def CalcSwitchOverheadReduction(queue, Idx, reduction = 0):
     # # wgt_byBlock, weight-reloading overhead of each block w.r.t time
     sizeByBlock = get_weightsize_byBlock(Idx)
 
-    wgt_byBlock = [w * 2 / 64000 * 0.6 for w in sizeByBlock] # w is number of params, we use 16bit, so w * 2 is the total byte of memory
-                                                             # based on our hardware experiment, it take 600ms to read 64KB
+    wgt_byBlock = [w * 2 / 64000 * 0.6 for w in
+                   sizeByBlock]  # w is number of params, we use 16bit, so w * 2 is the total byte of memory
+    # based on our hardware experiment, it take 600ms to read 64KB
     cpt_byBlock = get_ComputationalSavings(Idx)
 
     for idx, q in enumerate(queue):
@@ -825,9 +829,10 @@ def CalcSwitchOverheadReduction(queue, Idx, reduction = 0):
 
         # # SavingCpt: computational savings w.r.t time
         # # SavingWgt: weights-reloading savings w.r.t time
-        SavingWgt, SavingCpt = 0, 0 # reset for each q
+        SavingWgt, SavingCpt = 0, 0  # reset for each q
 
-        for idx2, layer in enumerate(q[2]): # q contains an optimal decomposition tree's middle two blocks which is q[2]
+        for idx2, layer in enumerate(
+                q[2]):  # q contains an optimal decomposition tree's middle two blocks which is q[2]
             for cluster in layer:
 
                 # # the decomposition tree only has two middle layers
@@ -837,7 +842,6 @@ def CalcSwitchOverheadReduction(queue, Idx, reduction = 0):
                 elif idx2 == 1:  # for the 2nd middle layer
                     SavingCpt += sum(range(len(cluster))) * cpt_byBlock[2] * 3
                     SavingWgt += sum(range(len(cluster))) * wgt_byBlock[2]
-
 
         # queue[idx].append(SavingWgt + SavingCpt) # append the total savings
 
@@ -864,8 +868,8 @@ def plotTraderOff_oneTree(Idx, N=5):
     fig, ax = plt.subplots()
 
     x = np.linspace(0, 1, len(score))
-    ax.plot(x, score, 'r', label = 'Similarity score', linewidth = linewidth)
-    ax.plot(x, overhead, 'b', label = 'Overhead reduction', linewidth = linewidth)
+    ax.plot(x, score, 'r', label='Similarity score', linewidth=linewidth)
+    ax.plot(x, overhead, 'b', label='Overhead reduction', linewidth=linewidth)
 
     ##############################################
     # ### write trade off data into excel file
@@ -891,12 +895,11 @@ def plotTraderOff_oneTree(Idx, N=5):
     for i in range(len(x)):
         print('{:.3f} - {}'.format(x[i], budget[i]))
 
-
     # # plot the intersection point and a vertical line segment
-    point = (0.197, 0.498) # the coordinates of the intersection point
+    point = (0.197, 0.498)  # the coordinates of the intersection point
     # circle = plt.Circle(point, 0.02, color='green')
     # ax.add_patch(circle)
-    ax.plot([point[0], point[0]], [0, point[1]], 'k', linewidth=linewidth, linestyle='dotted') # plot a vertical line
+    ax.plot([point[0], point[0]], [0, point[1]], 'k', linewidth=linewidth, linestyle='dotted')  # plot a vertical line
 
     plt.ylim([0, 1])
     plt.xlim([0, 1])
@@ -923,6 +926,7 @@ def plotTraderOff_oneTree(Idx, N=5):
     fig.show()
     fig.savefig("algo1_tradeoff.pdf")
 
+
 def findLocactionOfBP(N=7, LayerNum=5, BranchNum=3):
     '''
     find the locations of the 'BranchNum' branch out points out of the 'LayerNum' possible branch points
@@ -934,10 +938,10 @@ def findLocactionOfBP(N=7, LayerNum=5, BranchNum=3):
 
     RSM = np.load('rsm.npy')
 
-    Max_value, Max_loc = 0, 0
+    dic_final = {}
     for Idx in itertools.combinations([i for i in range(LayerNum)], BranchNum):
         queue = clustering(RSM, Idx, N=N)  # group tasks according to similarity score
-        CalcSwitchOverheadReduction(queue, Idx, reduction=2)  # calculate overhead reduction, use SavingCpt
+        CalcSwitchOverheadReduction(queue, Idx, reduction=0)  # calculate overhead reduction, use SavingCpt
 
         # # first sort by model size x[1] in ascending order, then by overhead reduction x[3] in descending order
         queue.sort(key=lambda x: (x[1], -x[3]))
@@ -950,24 +954,32 @@ def findLocactionOfBP(N=7, LayerNum=5, BranchNum=3):
         sum_reduction = sum(dic.values())
         print(Idx, sum_reduction)
 
-        if sum_reduction > Max_value:
-            Max_value = sum_reduction
-            Max_loc = Idx
+        # if sum_reduction > Max_value:
+        #     Max_value = sum_reduction
+        #     Max_loc = Idx
 
-    print('The loc with max value is: {}'.format(Max_loc))
-    return Max_loc
+        # # add current location arrangement into dic_final
+        dic_final[''.join(str(i) for i in Idx)] = sum_reduction
+
+    print('\n\n**********')
+    print('N = {}'.format(N))
+    print('value - location arrangement')
+    for k, v in sorted(dic_final.items(), key=lambda x: x[1], reverse=True):
+        print('{:.1f} - {}'.format(v, [int(i) for i in k]))
+
+
+
+    # print('The loc with max value is: {}'.format(Max_loc))
+    # return Max_loc
 
 
 ########################### program execution entry ############################
-
 
 
 # # for debug, we pre-train all single models in advance
 # # so that we do not need train them every time
 # for i in range(10):
 #     model_train(train=True, chosenType=i)
-
-
 
 
 # # for debug, we calculate RSM once and save it
@@ -977,12 +989,21 @@ def findLocactionOfBP(N=7, LayerNum=5, BranchNum=3):
 # print('RSM saved...')
 
 
-
 # RSM = np.load('rsm.npy')
 # print('RSM reloaded...')
 # plotTraderOff_oneTree(Idx=[0,2,4], N=7)
 
-########################### below is debug history ############################
+
+# # find the location arrangement of branch out points
+# # change the layer-wise inference time in get_ComputationalSavings() for each dataset accordingly
+print('\n\n')
+start_time = time.time()
+findLocactionOfBP(N=5, LayerNum=4, BranchNum=3)  # # for 6-layer design: LayerNum=5, BranchNum=3;
+                                                 # # for 5-layer design: LayerNum=4, BranchNum=3;
+print("--- {0:.2f} minutes ---".format((time.time() - start_time) / 60))
+
+
+########################### below is debug history, you can ignore ############################
 
 # RSM = np.load('rsm.npy')
 # # start = time.time()
@@ -1008,7 +1029,6 @@ def findLocactionOfBP(N=7, LayerNum=5, BranchNum=3):
 # for q in queue:
 #     if q[1] not in dic:
 #         dic[q[1]] = q[3]  # log the max reduction of each budget
-
 
 
 def fun(Idx):
