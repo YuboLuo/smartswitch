@@ -840,7 +840,7 @@ def CalcSwitchOverheadReduction(queue, Idx, reduction=0):
                     SavingCpt += sum(range(len(cluster))) * cpt_byBlock[1]
                     SavingWgt += sum(range(len(cluster))) * wgt_byBlock[1]
                 elif idx2 == 1:  # for the 2nd middle layer
-                    SavingCpt += sum(range(len(cluster))) * cpt_byBlock[2] * 3
+                    SavingCpt += sum(range(len(cluster))) * cpt_byBlock[2]
                     SavingWgt += sum(range(len(cluster))) * wgt_byBlock[2]
 
         # queue[idx].append(SavingWgt + SavingCpt) # append the total savings
@@ -998,7 +998,7 @@ def findLocactionOfBP(N=7, LayerNum=5, BranchNum=3):
 # # change the layer-wise inference time in get_ComputationalSavings() for each dataset accordingly
 print('\n\n')
 start_time = time.time()
-findLocactionOfBP(N=5, LayerNum=4, BranchNum=3)  # # for 6-layer design: LayerNum=5, BranchNum=3;
+findLocactionOfBP(N=8, LayerNum=4, BranchNum=3)  # # for 6-layer design: LayerNum=5, BranchNum=3;
                                                  # # for 5-layer design: LayerNum=4, BranchNum=3;
 print("--- {0:.2f} minutes ---".format((time.time() - start_time) / 60))
 
