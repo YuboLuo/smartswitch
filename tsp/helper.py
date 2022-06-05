@@ -80,6 +80,30 @@ def covertConditional(conditionalList):
 
     return condiDic
 
+def covertCondition(condiList):
+    '''
+    convert condition constraint: we assume that there are only one-step conditions and no multiple conditions
+    we use a tuple (<node1>, <node2>, <prob>) to represent that node2 is conditioned on node2 with a probability of prob to be executed
+    examples for only one-step conditions: (1,2,0.1), (1,4,0.3), (3,5,0.6)
+    examples for multiple-step conditions: (1,2,0.1), (2,5,0.5) where 2 is conditioned on 1 and 5 is conditioned on 2
+                    multiple-step cases need more complex coding implementation, here we just want to show the proof-of-concept
+                    so we only implement the easier one-step condition only case
+
+    :param condiList: a list of tuple (<node1>, <node2>, <prob>)
+    :return: a dict, since we are only dealing with one-step condition case, the precedence node is actually not important here
+                we only return the later node and its execution probability
+    '''
+
+    condiDic = {}
+    for cond in condiList:
+        condiDic[cond[1]] = cond[2]
+
+    return condiDic
+
+
+
+
+
 
 def covertPrecedence(precedenceList, Type = 0):
     '''

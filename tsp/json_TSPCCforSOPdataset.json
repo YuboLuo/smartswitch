@@ -1,0 +1,8 @@
+{
+  "ESC07": [[1,2,0.5], [1,4,0.2], [3,6,0.2]],
+  "ESC11": [[1,2,0.5], [1,4,0.2], [3,6,0.2]],
+  "ESC12": [[1,2,0.5], [1,4,0.2], [3,6,0.2]],
+  "br17.10": [[1,2,0.5], [1,4,0.2], [3,6,0.2]],
+  "br17.12": [[1,2,0.5], [1,4,0.2], [3,6,0.2]],
+  "comment": "This jason file stores the conditional probability of traversing form one node to another. In our current implementation, we only consider one-step condition and not multiple step condition exists"
+}

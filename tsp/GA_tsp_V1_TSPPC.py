@@ -316,7 +316,7 @@ with open('json_data.json') as json_file:
 
 graph = data['Example']
 
-instance = 3
+instance = 2
 
 precedenceList = graph[instance]['PrecedenceConstraint']
 preceDic = covertPrecedence(precedenceList)
@@ -324,29 +324,29 @@ preceDic = covertPrecedence(precedenceList)
 switchMat = np.array(graph[instance]['Matrix'])
 node_num = len(switchMat)
 
-print('BestRoute_Priority_based = ', 1 / Fitness([e - 1 for e in graph[instance]['BestRoute_Priority_based']], switchMat))
-print('BestRoute_TS_based = ', 1 / Fitness([e - 1 for e in graph[instance]['BestRoute_TS_based']], switchMat))
+# print('BestRoute_Priority_based = ', 1 / Fitness([e - 1 for e in graph[instance]['BestRoute_Priority_based']], switchMat))
+# print('BestRoute_TS_based = ', 1 / Fitness([e - 1 for e in graph[instance]['BestRoute_TS_based']], switchMat))
 
 ######################################################################################
 ### use the SOP dataset
-# datasetFile = 'dataset/sop/ry48p.1.sop'    # br17.10
-# precedence, switchMat = readSOP(datasetFile)
-# preceDic = covertPrecedence(precedence, Type = 1)
+datasetFile = 'dataset/sop/ESC07.sop'    # br17.10
+precedence, switchMat = readSOP(datasetFile)
+preceDic = covertPrecedence(precedence, Type = 1)
 ######################################################################################
 
-param = { 'popSize': 20,
-          'eliteSize': 3,
-          'mutationRate': 0.05,
-          'generations': 10}
+param = { 'popSize': 100,
+          'eliteSize': 20,
+          'mutationRate': 0.1,
+          'generations': 500}
 
 
 # geneticAlgorithmPlot(popSize=100, eliteSize=20, mutationRate=0.01, generations=500, switchMat=switchMat)
-optimal = geneticAlgorithmPlot( popSize = param['popSize'],
-                                eliteSize = param['eliteSize'],
-                                mutationRate = param['mutationRate'],
-                                generations = param['generations'],
-                                switchMat = switchMat,
-                                preceDic = preceDic)
+optimal = geneticAlgorithmPlot( popSize=param['popSize'],
+                                eliteSize=param['eliteSize'],
+                                mutationRate=param['mutationRate'],
+                                generations=param['generations'],
+                                switchMat=switchMat,
+                                preceDic=preceDic)
 print(param)
 # print([e + 1 for e in optimal])
 # print(datasetFile.split('/')[-1], '\n', [e + 1 for e in optimal])

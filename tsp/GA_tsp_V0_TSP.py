@@ -224,7 +224,7 @@ def createMat(cityList):
 # switchMat = createMat(cityList)
 
 ### load dataset
-data = pd.read_csv('dataset/dantzig42_d.txt', delim_whitespace=True, header=None)
+data = pd.read_csv('dataset/gr17_d.txt', delim_whitespace=True, header=None)
 switchMat = data.values
 
 geneticAlgorithmPlot(popSize=100, eliteSize=20, mutationRate=0.01, generations=500, switchMat=switchMat)
