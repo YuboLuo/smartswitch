@@ -989,18 +989,18 @@ def findLocactionOfBP(N=7, LayerNum=5, BranchNum=3):
 # print('RSM saved...')
 
 
-RSM = np.load('rsm.npy')
-print('RSM reloaded...')
-plotTraderOff_oneTree(Idx=[0,2,4], N=5)
+# RSM = np.load('rsm.npy')
+# print('RSM reloaded...')
+# plotTraderOff_oneTree(Idx=[0,2,4], N=5)
 
 
-# # find the location arrangement of branch out points
-# # change the layer-wise inference time in get_ComputationalSavings() for each dataset accordingly
-# print('\n\n')
-# start_time = time.time()
-# findLocactionOfBP(N=5, LayerNum=4, BranchNum=3)  # # for 6-layer design: LayerNum=5, BranchNum=3;
-#                                                  # # for 5-layer design: LayerNum=4, BranchNum=3;
-# print("--- {0:.2f} minutes ---".format((time.time() - start_time) / 60))
+# find the location arrangement of branch out points
+# change the layer-wise inference time in get_ComputationalSavings() for each dataset accordingly
+print('\n\n')
+start_time = time.time()
+findLocactionOfBP(N=5, LayerNum=4, BranchNum=3)  # # for 6-layer design: LayerNum=5, BranchNum=3;
+                                                 # # for 5-layer design: LayerNum=4, BranchNum=3;
+print("--- {0:.2f} minutes ---".format((time.time() - start_time) / 60))
 
 
 ########################### below is debug history, you can ignore ############################

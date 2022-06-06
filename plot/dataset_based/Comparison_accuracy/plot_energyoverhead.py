@@ -8,7 +8,7 @@ file = "comparison.xlsx"
 
 xls = pd.ExcelFile(file)
 print(xls.sheet_names)
-df = xls.parse('timeoverhead_pico')
+df = xls.parse('energyoverhead_msp')
 
 datasets = df.values[0,1:10]
 values = df.values[1:8,1:10]
@@ -23,7 +23,7 @@ fig, ax = plt.subplots()
 
 ax.grid(axis='y', linestyle=':', zorder = 0)
 
-# values[4,:] = values[6:]  # uncomment this for best MTL result
+values[4,:] = values[6:]  # uncomment this for best MTL result
 
 rects11 = ax.bar(x - 2.5 * width, values[2,:], width*0.7, label='YONO',color='#1F77B4', edgecolor='#353337', zorder = 2)
 rects12 = ax.bar(x - 1.5 * width, values[1,:], width*0.7, label='NWS',color='#ffd1a9', edgecolor='#353337', zorder = 2)
@@ -41,7 +41,7 @@ plt.xticks( range(len(x)),fontsize=fontsize, rotation=0)
 legend = plt.legend(bbox_to_anchor=(0, 0.98, 1.,1), loc=3, shadow=False,mode='expand',ncol=6,fontsize='large')
 
 plt.xlabel('Datasets', fontsize=fontsize)
-plt.ylabel('Time overhead (s)',fontsize=fontsize)
+plt.ylabel('Energy overhead (mJ)',fontsize=fontsize)
 
 
 
@@ -64,7 +64,7 @@ plt.subplots_adjust(
     hspace=0.2,
 )
 fig.show()
-fig.savefig("inferencetime_pico2.pdf")
+fig.savefig("energyoverhead_msp2.pdf")
 
 
 

@@ -10,8 +10,8 @@ xls = pd.ExcelFile(file)
 print(xls.sheet_names)
 df = xls.parse('accuracy')
 
-datasets = df.values[0,1:11]
-values = df.values[1:6,1:11]
+datasets = df.values[0,1:10]
+values = df.values[1:6,1:10]
 x = np.arange(values.shape[1])
 print(values)
 
