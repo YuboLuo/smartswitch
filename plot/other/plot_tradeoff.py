@@ -12,8 +12,12 @@ df = xls.parse('Sheet1')
 values = df.values[:28,:2]
 print(values)
 
-score = values[:,0]
-overhead = values[:,1]
+similarity_score = values[:,0]
+overhead_reduction = values[:,1]
+
+# later, we decided to use (variety score, overhead) instead of (similarity score, overhead_reduction)
+variety_score = 1 - similarity_score
+overhead = 1 - overhead_reduction
 
 fontsize = 13
 linewidth = 2
@@ -22,9 +26,9 @@ fig, ax = plt.subplots()
 
 
 
-x = np.linspace(0, 1, len(score))
-ax.plot(x, score, 'r', label='Similarity score', linewidth=linewidth)
-ax.plot(x, overhead, 'b', label='Overhead reduction', linewidth=linewidth)
+x = np.linspace(0, 1, len(variety_score))
+ax.plot(x, variety_score, 'r', label='Variety score', linewidth=linewidth)
+ax.plot(x, overhead, 'b', label='Switch overhead', linewidth=linewidth)
 
 
 # # plot the intersection point and a vertical line segment
@@ -36,7 +40,7 @@ plt.xlim([0, 1])
 ax.legend(loc='right', fontsize=fontsize - 2)
 plt.yticks(fontsize=fontsize)
 plt.xticks(fontsize=fontsize)
-plt.ylabel('Task similarity score\nand Overhead reduction', fontsize=fontsize)
+plt.ylabel('Task variety score\nand switch overhead', fontsize=fontsize)
 plt.xlabel('Model Size Budget', fontsize=fontsize)
 # plt.title('Normalized Results', fontsize=fontsize)
 
