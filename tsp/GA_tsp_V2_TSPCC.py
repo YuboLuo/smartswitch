@@ -387,7 +387,7 @@ node_num = len(switchMat)
 
 
 ### use the SOP dataset
-datasetName = 'ESC11'
+datasetName = 'br17.12'
 datasetFile = 'dataset/sop/' + datasetName + '.sop'  # br17.10
 precedence, switchMat = readSOP(datasetFile)
 preceDic = covertPrecedence(precedence, Type=1)
@@ -404,7 +404,7 @@ condiDic = covertCondition(data[datasetName])
 param = {'popSize': 100,
          'eliteSize': 20,
          'mutationRate': 0.1,
-         'generations': 100}
+         'generations': 500}
 
 # geneticAlgorithmPlot(popSize=100, eliteSize=20, mutationRate=0.01, generations=500, switchMat=switchMat)
 optimal = geneticAlgorithmPlot(popSize=param['popSize'],
@@ -414,4 +414,7 @@ optimal = geneticAlgorithmPlot(popSize=param['popSize'],
                                switchMat=switchMat,
                                preceDic=preceDic,
                                condiDic=condiDic)
-print(param)
+
+print(datasetName,param)
+bruteforce_TSPCC(switchMat, preceDic, condiDic)
+
