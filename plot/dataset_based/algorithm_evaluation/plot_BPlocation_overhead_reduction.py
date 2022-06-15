@@ -24,9 +24,9 @@ fig, ax = plt.subplots()
 ax.grid(axis='y', linestyle=':', zorder = 0)
 
 
-rects11 = ax.bar(x - 1.5 * width, values[0,:] / values[2,:], width * 1.2, label='#Mix-budget',color='#1F77B4', edgecolor='#353337', zorder = 2)
-rects12 = ax.bar(x              , values[1,:] / values[2,:], width * 1.2, label='#Tradeoff-budget',color='#8c0000', edgecolor='#353337', zorder = 2)
-rects13 = ax.bar(x + 1.5 * width, values[2,:] / values[2,:], width * 1.2, label='#Max-budget',color='#3F5A8A', edgecolor='#353337', zorder = 2)
+rects11 = ax.bar(x - 1.5 * width, values[0,:] , width * 1.2, label='#Mix-budget',color='#1F77B4', edgecolor='#353337', zorder = 2)
+rects12 = ax.bar(x              , values[1,:] , width * 1.2, label='#Tradeoff-budget',color='#8c0000', edgecolor='#353337', zorder = 2)
+rects13 = ax.bar(x + 1.5 * width, values[2,:] , width * 1.2, label='#Max-budget',color='#3F5A8A', edgecolor='#353337', zorder = 2)
 # rects14 = ax.bar(x + 0.5 * width, values[3,:], width*0.7, label='Vanilla',color='#ffa352', edgecolor='#353337', zorder = 2)
 # rects15 = ax.bar(x + 1.5 * width, values[4,:], width*0.7, label='MTL',color='#3F5A8A', edgecolor='#353337', zorder = 2)
 # rects16 = ax.bar(x + 2.5 * width, values[4,:], width*0.7, label='SS',color='#8c0000', edgecolor='#353337', zorder = 2)
@@ -38,7 +38,7 @@ plt.xticks( range(len(x)),fontsize=fontsize, rotation=0)
 legend = plt.legend(bbox_to_anchor=(0, 0.98, 1.,1), loc=3, shadow=False,mode='expand',ncol=6,fontsize='large')
 
 plt.xlabel('Datasets', fontsize=fontsize)
-plt.ylabel('Overhead reduction',fontsize=fontsize)
+plt.ylabel('Overhead reduction (s)',fontsize=fontsize)
 
 
 

@@ -11,7 +11,7 @@ print(xls.sheet_names)
 df = xls.parse('accuracy')
 
 datasets = df.values[0,1:10]
-values = df.values[1:6,1:10]
+values = df.values[1:7,1:10]
 x = np.arange(values.shape[1])
 print(values)
 
@@ -23,11 +23,15 @@ fig, ax = plt.subplots()
 
 ax.grid(axis='y', linestyle=':', zorder = 0)
 
-# rects11 = ax.bar(x - 2 * width, values[0,:], width*0.8, label='NWV',color='#1F77B4', edgecolor='#353337', zorder = 2)
-# rects12 = ax.bar(x - 1 * width, values[1,:], width*0.8, label='NWS',color='#ffd1a9', edgecolor='#353337', zorder = 2)
-# rects13 = ax.bar(x            , values[2,:], width*0.8, label='YONO',color='#629fca', edgecolor='#353337', zorder = 2)
-# rects14 = ax.bar(x + 1 * width, values[3,:], width*0.8, label='Vanilla',color='#ffa352', edgecolor='#353337', zorder = 2)
-# rects15 = ax.bar(x + 2 * width, values[4,:], width*0.8, label='SS',color='#8c0000', edgecolor='#353337', zorder = 2)
+## because we use data read from NWS/NWV/YONO paper and then use ratio coversion
+## it might be possible there are some data that have a value larger than 1 after coversion
+## we have to make the maximun value no bigger than 1
+
+for i in range(len(values)):
+    for j in range(len(values[0])):
+        if values[i][j] >= 100:
+            values[i][j] = 100
+
 
 
 rects11 = ax.bar(x - 2.5 * width, values[2,:], width*0.7, label='YONO',color='#1F77B4', edgecolor='#353337', zorder = 2)
@@ -35,7 +39,7 @@ rects12 = ax.bar(x - 1.5 * width, values[1,:], width*0.7, label='NWS',color='#ff
 rects13 = ax.bar(x - 0.5 * width, values[0,:], width*0.7, label='NWV',color='#629fca', edgecolor='#353337', zorder = 2)
 rects14 = ax.bar(x + 0.5 * width, values[3,:], width*0.7, label='Vanilla',color='#ffa352', edgecolor='#353337', zorder = 2)
 rects15 = ax.bar(x + 1.5 * width, values[4,:], width*0.7, label='MTL',color='#3F5A8A', edgecolor='#353337', zorder = 2)
-rects16 = ax.bar(x + 2.5 * width, values[4,:], width*0.7, label='SS',color='#8c0000', edgecolor='#353337', zorder = 2)
+rects16 = ax.bar(x + 2.5 * width, values[5,:], width*0.7, label='SS',color='#8c0000', edgecolor='#353337', zorder = 2)
 
 ax.set_xticklabels(datasets)
 plt.xticks( range(len(x)),fontsize=fontsize, rotation=0)
