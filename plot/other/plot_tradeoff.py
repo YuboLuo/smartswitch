@@ -19,7 +19,7 @@ overhead_reduction = values[:,1]
 variety_score = 1 - similarity_score
 overhead = 1 - overhead_reduction
 
-fontsize = 13
+fontsize = 18
 linewidth = 2
 
 fig, ax = plt.subplots()
@@ -27,7 +27,7 @@ fig, ax = plt.subplots()
 
 
 x = np.linspace(0, 1, len(variety_score))
-ax.plot(x, variety_score, 'r', label='Variety score', linewidth=linewidth)
+ax.plot(x, variety_score, 'k--', label='Variety score', linewidth=linewidth)
 ax.plot(x, overhead, 'b', label='Switch overhead', linewidth=linewidth)
 
 
@@ -35,22 +35,24 @@ ax.plot(x, overhead, 'b', label='Switch overhead', linewidth=linewidth)
 point = (0.197, 0.498)  # the coordinates of the intersection point
 ax.plot([point[0], point[0]], [0, point[1]], 'k', linewidth=linewidth, linestyle='dotted')  # plot a vertical line
 
+
+
 plt.ylim([0, 1])
 plt.xlim([0, 1])
 ax.legend(loc='right', fontsize=fontsize - 2)
-plt.yticks(fontsize=fontsize)
+plt.yticks([0.2, 0.4, 0.6, 0.8, 1.0], fontsize=fontsize)
 plt.xticks(fontsize=fontsize)
-plt.ylabel('Task variety score\nand switch overhead', fontsize=fontsize)
+plt.ylabel('Normalized task variety score\nand switch overhead', fontsize=fontsize)
 plt.xlabel('Model Size Budget', fontsize=fontsize)
 # plt.title('Normalized Results', fontsize=fontsize)
 
 # bbox_to_anchor = (x0, y0, width, height)
-plt.legend(bbox_to_anchor=(-0.25, 1.0, 1.26, 0.9), loc=3, shadow=False, mode='expand', ncol=2, fontsize='large')
+plt.legend(bbox_to_anchor=(-0.2, 1.0, 1.26, 0.9), loc=3, shadow=False, mode='expand', ncol=2, fontsize='x-large',frameon=False)
 
-fig.set_size_inches(4.5, 3.5)
+fig.set_size_inches(5, 4)
 plt.subplots_adjust(
-    left=0.193,
-    bottom=0.14,
+    left=0.22,
+    bottom=0.17,
     right=0.951,
     top=0.877,
     wspace=1,
