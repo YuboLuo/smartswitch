@@ -2,7 +2,6 @@
 ..
 .DS_Store
 .idea/
-*.pdf
 tsp/__pycache__/
 decomposition/pretrained/
 decomposition/rsm.npy
