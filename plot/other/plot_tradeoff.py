@@ -19,7 +19,7 @@ overhead_reduction = values[:,1]
 variety_score = 1 - similarity_score
 overhead = 1 - overhead_reduction
 
-fontsize = 18
+fontsize = 16
 linewidth = 2
 
 fig, ax = plt.subplots()
@@ -32,8 +32,8 @@ ax.plot(x, overhead, 'b', label='Switch overhead', linewidth=linewidth)
 
 
 # # plot the intersection point and a vertical line segment
-point = (0.197, 0.498)  # the coordinates of the intersection point
-ax.plot([point[0], point[0]], [0, point[1]], 'k', linewidth=linewidth, linestyle='dotted')  # plot a vertical line
+# point = (0.197, 0.498)  # the coordinates of the intersection point
+# ax.plot([point[0], point[0]], [0, point[1]], 'k', linewidth=linewidth, linestyle='dotted')  # plot a vertical line
 
 
 
@@ -61,6 +61,8 @@ plt.subplots_adjust(
 
 fig.show()
 fig.savefig("algo1_tradeoff.pdf")
+
+
 
 
 

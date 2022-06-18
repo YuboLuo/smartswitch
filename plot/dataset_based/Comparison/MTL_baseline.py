@@ -12,13 +12,13 @@ file = "comparison.xlsx"
 
 xls = pd.ExcelFile(file)
 print(xls.sheet_names)
-df = xls.parse('energyoverhead_pico')
+df = xls.parse('timeoverhead_pico')
 
 names = df.values[0,1:10]  # name of datasets
-values1 = df.values[11:17,1:10]
+values1 = df.values[10:16,1:10]  # layer-wise inference time or energy overhead
 CostPerLayer_inference = np.transpose(values1)  # layer-wise inference time
 
-values2 = df.values[21:27,1:10]
+values2 = df.values[20:26,1:10]  # layer-wise weight-reloading time or energy overhead
 CostPerLayer_reload = np.transpose(values2) # layer-wise weights-reloading time
 
 
