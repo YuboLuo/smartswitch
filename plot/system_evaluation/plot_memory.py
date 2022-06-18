@@ -15,7 +15,7 @@ def autolabel(rects,ax):
                     xy=(rect.get_x() + rect.get_width() / 2, height - 15),
                     xytext=(0, 3),  # 3 points vertical offset
                     textcoords="offset points",
-                    ha='center', va='bottom',fontsize=fontsize-3,zorder=3)
+                    ha='center', va='bottom',fontsize=fontsize-2,zorder=3)
 
 ##########################################################################################################################
 
@@ -42,19 +42,20 @@ rects = ax.bar(x, values[0,:], width, color='#629fca')
 
 autolabel(rects, ax)
 
-ax.set_xticklabels(['Vanilla','SS','NWS','NWV','YONO'])
+ax.set_xticklabels(['Vanilla','Antler','NWS','NWV','YONO'])
 plt.xticks( range(len(x)),fontsize=fontsize, rotation=0)
+plt.yticks( fontsize=fontsize)
 
 ax.set_ylim(0,750)
 
 
-plt.xlabel('Methods', fontsize=fontsize)
+# plt.xlabel('Methods', fontsize=fontsize)
 plt.ylabel('Memory usage (KB)',fontsize=fontsize)
 
 fig.set_size_inches(4, 2.5)
 plt.subplots_adjust(
-    left=0.17,
-    bottom=0.2,
+    left=0.18,
+    bottom=0.18,
     right=0.962,
     top=0.907,
     wspace=0.2,

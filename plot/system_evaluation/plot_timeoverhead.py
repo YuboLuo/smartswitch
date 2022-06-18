@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-board = 'msp'
+# board = 'msp'
 board = 'pico'
 
 # To open Workbook
@@ -38,7 +38,7 @@ rects12 = ax.bar(x - 1.5 * width, values[1,:], width*width_ctr, label='NWS',colo
 rects13 = ax.bar(x - 0.5 * width, values[0,:], width*width_ctr, label='NWV',color='#629fca', edgecolor='#353337', zorder = 2)
 rects14 = ax.bar(x + 0.5 * width, values[3,:], width*width_ctr, label='Vanilla',color='#ffa352', edgecolor='#353337', zorder = 2)
 rects15 = ax.bar(x + 1.5 * width, values[4,:], width*width_ctr, label='MTL',color='#3F5A8A', edgecolor='#353337', zorder = 2) # #bbd6e8
-rects16 = ax.bar(x + 2.5 * width, values[5,:], width*width_ctr, label='SS',color='#8c0000', edgecolor='#353337', zorder = 2) # #bbd6e8
+rects16 = ax.bar(x + 2.5 * width, values[5,:], width*width_ctr, label='Antler',color='#8c0000', edgecolor='#353337', zorder = 2) # #bbd6e8
 
 
 ax.margins(x=0.01)
@@ -52,7 +52,6 @@ else:
 
 
 # bbox_to_anchor = (x0, y0, width, height)
-# legend = plt.legend(bbox_to_anchor=(0, 0.98, 1.,1), loc=3, shadow=False,mode='expand',ncol=6,fontsize='large')
 legend = plt.legend(bbox_to_anchor=(-0.09, 0.96, 1.1,1), loc=3, shadow=False,mode='expand',ncol=6,fontsize='x-large',frameon=False)
 
 

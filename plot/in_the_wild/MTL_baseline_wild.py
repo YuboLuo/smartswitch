@@ -7,18 +7,29 @@ import numpy as np
 import pandas as pd
 import random
 
+# type = 1  # audio
+type = 0  # image
+
+
 # To open Workbook
-file = "comparison.xlsx"
+file = "comparison_wild.xlsx"
 
 xls = pd.ExcelFile(file)
 print(xls.sheet_names)
-df = xls.parse('timeoverhead_pico')
+df = xls.parse('in_the_wild_image')
 
-names = df.values[0,1:10]  # name of datasets
-values1 = df.values[10:16,1:10]  # layer-wise inference time or energy overhead
+if type == 1:
+    values1 = df.values[7:12,1:3]  # layer-wise inference time or energy overhead
+else:
+    values1 = df.values[7:14,1:3]  # layer-wise inference time or energy overhead
+
 CostPerLayer_inference = np.transpose(values1)  # layer-wise inference time
 
-values2 = df.values[20:26,1:10]  # layer-wise weight-reloading time or energy overhead
+if type == 1:  # audio
+    values2 = df.values[16:21,1:3]  # layer-wise weight-reloading time or energy overhead
+else:  # image
+    values2 = df.values[18:25, 1:3]  # layer-wise weight-reloading time or energy overhead
+
 CostPerLayer_reload = np.transpose(values2) # layer-wise weights-reloading time
 
 
@@ -31,7 +42,7 @@ def get_CostPerBlock(CostPerLayer, BranchLoc):
     '''
 
     n_row, _ = CostPerLayer.shape
-    CostPerBlock = np.zeros((n_row, 4), dtype=object) # we only have three branch points, so we have 4 blocks in total
+    CostPerBlock = np.zeros((n_row, len(BranchLoc) + 1), dtype=object) # we only have three branch points, so we have 4 blocks in total, len(BranchLoc) + 1) = 4
 
     for i in range(n_row):
         CostPerBlock[i] = [sum(CostPerLayer[i][:BranchLoc[0]+1]),           # block_0 - always shared by all tasks
@@ -72,18 +83,14 @@ def cal_Matrix(N, decomposition):
 
 def get_decomposition():
 
-    ### we have to manually write the decomposition details of each dataset into the variable 'decompositions'
-    d0 = [[[1], [0, 2, 3, 4, 5, 6, 7, 8, 9]], [[1], [4], [7], [0, 2, 3, 5, 6, 8, 9]]]  # MNIST
-    d1 = [[[0], [2], [1, 3, 4, 5, 6, 7, 8, 9]], [[0], [2], [3], [1, 4, 5, 6, 7, 8, 9]]]  # CIFAR10
-    d2 = [[[3], [8], [0, 1, 2, 4, 5, 6, 7, 9]], [[3], [8], [6], [0, 1, 2, 4, 5, 7, 9]]]  # SVHH
-    d3 = [[[0], [8], [1, 2, 3, 4, 5, 6, 7, 9]], [[0], [8], [1, 2, 3, 4, 5, 6, 7], [9]]]  # GTSBR
-    d4 = [[[3], [0, 1, 2, 4, 5, 6, 7], [8], [9]], [[3], [1], [0, 2, 4, 5, 6, 7], [8], [9]]]  # GSC
-    d5 = [[[1], [2], [0, 3, 4, 5, 6, 7], [8], [9]], [[1], [2], [0, 3, 4, 5, 6, 7], [8], [9]]]  # FMNIST
-    d6 = [[[1], [2], [5], [0, 3, 4, 6, 7, 8, 9]], [[1], [2], [5], [0, 3, 4, 6, 7, 8, 9]]]  # ESC
-    d7 = [[[6, 8], [0, 1, 2, 3, 4, 5, 7, 9]], [[6], [8], [1], [4], [0, 2, 3, 5, 7, 9]]]  # US8K
-    d8 = [[[1], [0, 2, 3, 4, 5]], [[1], [3], [0, 2, 4, 5]]]  # HHAR
+    if type == 1:  # audio
+        d0 = [[[4], [0, 1, 2, 3]], [[4], [0, 1, 2], [3]]]  # audio_based experiment
+        d1 = [[[4], [0, 1, 2, 3]], [[4], [0, 1, 2], [3]]]  # image_based experiment
+    else:  # image
+        d0 = [[[0], [1, 2, 3]], [[0], [1, 2, 3]]]
+        d1 = [[[0], [1, 2, 3]], [[0], [1, 2, 3]]]
 
-    decompositions = [d0, d1, d2, d3, d4, d5, d6, d7, d8]
+    decompositions = [d0, d1]
 
     return decompositions
 
@@ -95,16 +102,16 @@ def calc_MTL():
     '''
 
     print('\nMTL results:')
-    for datasetIdx in range(9):
+    for datasetIdx in range(2):
 
         #  datasetIdx - which dataset to use
 
         BranchLoc = [0,2,3]
 
-        if datasetIdx == 8:
-            N = 6
+        if type == 1:
+            N = 5 # audio_based experiment has 5 tasks
         else:
-            N = 10
+            N = 4 # image_based experiment has 4 tasks
 
 
         CostPerBlock_inference = get_CostPerBlock(CostPerLayer_inference, BranchLoc)
@@ -126,64 +133,6 @@ def calc_MTL():
 
 
 
-def calc_SS_enumerateALL(datasetIdx = 8):
-
-    '''
-    Ideally, for smartswitch, we should enumerate all possible permutation, and calculate cost for each one
-    and keep the lowest one
-    :param datasetIdx:
-    :return:
-    '''
-    decompositions = get_decomposition()
-
-    # datasetIdx = 8 # which dataset to use
-
-    # for datasets (Idx = 0,1,2,3,5,6) who have 6-layer, BranchLoc = [0,1,4], otherwise BranchLoc = [0,2,3] (Idx = 4,7,8)
-    if datasetIdx in [0, 1, 2, 3, 5, 6]:
-        BranchLoc = [0, 1, 4]
-    else:
-        BranchLoc = [0, 2, 3]
-
-    # if datasetIdx = 8 (HHAR), N is 6, as HHAR has only 6 tasks
-    if datasetIdx == 8:
-        N = 6
-    else:
-        N = 10
-
-
-    mat = cal_Matrix(N = N, decomposition = decompositions[datasetIdx]) # for SmartSwitch, calculate all datasets once, you need to write all decompositions into the variable 'decompositions'
-
-    CostPerBlock_inference = get_CostPerBlock(CostPerLayer_inference, BranchLoc)
-    CostPerBlock_reload = get_CostPerBlock(CostPerLayer_reload, BranchLoc)
-    # order = [i for i in range(N)]
-
-    cost_history = []
-    iter = 0
-    for order in itertools.permutations(list(range(N))):
-
-        # random.shuffle(order)
-        cost = 0
-        transition = []
-
-        order = list(order)
-        order_ext = order + [order[0]]  #  we need to append
-
-        for t_curr, t_next in zip(order_ext, order_ext[1:]):
-            SharedDepth = mat[t_curr][t_next]
-            transition.append(SharedDepth)
-            cost += sum(CostPerBlock_inference[datasetIdx][SharedDepth+1:])
-            cost += sum(CostPerBlock_reload[datasetIdx][SharedDepth+1:])
-
-        cost_history.append(cost)
-        if iter % 100000 == 0:
-            print(iter, order, transition, cost)
-        iter += 1
-
-    print('datasetIdx = {}\nmin = {}'.format(datasetIdx, min(cost_history)))
-
-
-
-
 
 def calc_SS():
     '''
@@ -194,7 +143,7 @@ def calc_SS():
 
 
     print('\nSS results:')
-    for datasetIdx in range(9):
+    for datasetIdx in range(2):
 
         decompositions = get_decomposition()
 
@@ -205,11 +154,10 @@ def calc_SS():
         else:
             BranchLoc = [0, 2, 3]
 
-        # if datasetIdx = 8 (HHAR), N is 6, as HHAR has only 6 tasks
-        if datasetIdx == 8:
-            N = 6
+        if type == 1:
+            N = 5 # audio_based experiment has 5 tasks
         else:
-            N = 10
+            N = 4 # image_based experiment has 4 tasks
 
 
         mat = cal_Matrix(N = N, decomposition = decompositions[datasetIdx]) # for SmartSwitch, calculate all datasets once, you need to write all decompositions into the variable 'decompositions'
