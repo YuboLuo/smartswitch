@@ -14,7 +14,7 @@ xls = pd.ExcelFile(file)
 print(xls.sheet_names)
 
 sheet_name_list = ['timeoverhead_msp','timeoverhead_pico','energyoverhead_msp','energyoverhead_pico']
-sheet_name = sheet_name_list[3]  # change this index accordingly
+sheet_name = sheet_name_list[2]  # change this index accordingly
 df = xls.parse(sheet_name)  #
 print(sheet_name)
 
@@ -30,26 +30,6 @@ MemoryPerLayer = np.transpose(values3) # layer-wise weights-reloading time
 
 
 def get_CostPerBlock(CostPerLayer, BranchLoc):
-    '''
-    convert the layer-wise cost to block-wise cost according to the locations of branch out points
-    :param CostPerLayer: an 2d array, layer-wise cost, row: dataset, col: layer
-    :param BranchLoc: the index of branch locations
-    :return: an 1d array, block-wise cost
-    '''
-
-    n_row, _ = CostPerLayer.shape
-    CostPerBlock = np.zeros((n_row, 4), dtype=object) # we only have three branch points, so we have 4 blocks in total
-
-    for i in range(n_row):
-        CostPerBlock[i] = [sum(CostPerLayer[i][:BranchLoc[0]+1]),           # block_0 - always shared by all tasks
-                       sum(CostPerLayer[i][BranchLoc[0]+1:BranchLoc[1]+1]),   # block_1
-                       sum(CostPerLayer[i][BranchLoc[1]+1:BranchLoc[2]+1]),   # block_2
-                       sum(CostPerLayer[i][BranchLoc[2]+1:])]           # block_3
-
-    return CostPerBlock
-
-
-def get_CostPerBlock_new(CostPerLayer, BranchLoc):
     '''
     convert the layer-wise cost to block-wise cost according to the locations of branch out points
     :param CostPerLayer: an 2d array, layer-wise cost, row: dataset, col: layer
@@ -121,6 +101,8 @@ def calc_MTL():
     :return:
     '''
 
+    cost_history = []
+
     print('\nMTL results:')
     for datasetIdx in range(9):
 
@@ -134,28 +116,89 @@ def calc_MTL():
             N = 10
 
 
-        CostPerBlock_inference = get_CostPerBlock(CostPerLayer_inference, BranchLoc)
-        CostPerBlock_reload = get_CostPerBlock(CostPerLayer_reload, BranchLoc)
+        CostPerBlock_inference = get_CostPerBlock(CostPerLayer_inference[datasetIdx], BranchLoc)
+        CostPerBlock_reload = get_CostPerBlock(CostPerLayer_reload[datasetIdx], BranchLoc)
 
-        cost_history = []
+
         order = [o for o in range(N)]
         order_ext = order + [order[0]]  # we need to append the first task to the end to make it a loop
 
         cost = 0
         for i in range(len(order_ext) - 1):
             SharedDepth = 0  # we assume for MTL, each task pair always only shares the first block of weights
-            cost += sum(CostPerBlock_inference[datasetIdx][SharedDepth + 1:])
-            cost += sum(CostPerBlock_reload[datasetIdx][SharedDepth + 1:])
+            cost += sum(CostPerBlock_inference[SharedDepth + 1:])
+            cost += sum(CostPerBlock_reload[SharedDepth + 1:])
+
+        # for datasetIdx = 8 (HHAR), as HHAR has only 6 tasks, we need to time it with a multiplier
+        if datasetIdx == 8:
+            cost /= (6/10)
+
+        print('{}: {:.2f}'.format(datasetIdx, cost))
+        cost_history.append(cost)
+
+    return cost_history
+
+
+def calc_MTL_breakdown():
+    '''
+    breakdown version: separate inference overhead and weight-reloading overhead
+    :return:
+    '''
+
+    cost_history = []
+    cost_inference_history = []  # overhehad by inference
+    cost_weight_history = []  # overhead by weight reloading
+
+
+    print('\nMTL results:')
+    for datasetIdx in range(9):
+
+        #  datasetIdx - which dataset to use
+
+        BranchLoc = [0,2,3]
+
+        if datasetIdx == 8:
+            N = 6
+        else:
+            N = 10
+
+
+        CostPerBlock_inference = get_CostPerBlock(CostPerLayer_inference[datasetIdx], BranchLoc)
+        CostPerBlock_reload = get_CostPerBlock(CostPerLayer_reload[datasetIdx], BranchLoc)
+
+        order = [o for o in range(N)]
+        order_ext = order + [order[0]]  # we need to append the first task to the end to make it a loop
+
+        cost, cost_inference, cost_weight = 0, 0, 0
+        for i in range(len(order_ext) - 1):
+            SharedDepth = 0  # we assume for MTL, each task pair always only shares the first block of weights
+            cost += sum(CostPerBlock_inference[SharedDepth + 1:])
+            cost += sum(CostPerBlock_reload[SharedDepth + 1:])
+
+            cost_inference += sum(CostPerBlock_inference[SharedDepth + 1:])
+            cost_weight += sum(CostPerBlock_reload[SharedDepth + 1:])
+
+        print('{}: {:.2f} = {:.2f} + {:.2f}'.format(datasetIdx,cost, cost_inference, cost_weight))
+
+        # for datasetIdx = 8 (HHAR), as HHAR has only 6 tasks, we need to time it with a multiplier
+        if datasetIdx == 8:
+            cost /= (6 / 10)
+            cost_inference /= (6 / 10)
+            cost_weight /= (6 / 10)
 
         cost_history.append(cost)
-        print(datasetIdx,cost)
+        cost_inference_history.append(cost_inference)
+        cost_weight_history.append(cost_weight)
 
+
+    return cost_history, cost_inference_history, cost_weight_history
 
 
 
 def calc_SS_enumerateALL(datasetIdx = 8):
 
     '''
+
     Ideally, for smartswitch, we should enumerate all possible permutation, and calculate cost for each one
     and keep the lowest one
     :param datasetIdx:
@@ -180,8 +223,8 @@ def calc_SS_enumerateALL(datasetIdx = 8):
 
     mat = cal_Matrix(N = N, decomposition = decompositions[datasetIdx]) # for SmartSwitch, calculate all datasets once, you need to write all decompositions into the variable 'decompositions'
 
-    CostPerBlock_inference = get_CostPerBlock(CostPerLayer_inference, BranchLoc)
-    CostPerBlock_reload = get_CostPerBlock(CostPerLayer_reload, BranchLoc)
+    CostPerBlock_inference = get_CostPerBlock(CostPerLayer_inference[datasetIdx], BranchLoc)
+    CostPerBlock_reload = get_CostPerBlock(CostPerLayer_reload[datasetIdx], BranchLoc)
     # order = [i for i in range(N)]
 
     cost_history = []
@@ -198,8 +241,8 @@ def calc_SS_enumerateALL(datasetIdx = 8):
         for t_curr, t_next in zip(order_ext, order_ext[1:]):
             SharedDepth = mat[t_curr][t_next]
             transition.append(SharedDepth)
-            cost += sum(CostPerBlock_inference[datasetIdx][SharedDepth+1:])
-            cost += sum(CostPerBlock_reload[datasetIdx][SharedDepth+1:])
+            cost += sum(CostPerBlock_inference[SharedDepth+1:])
+            cost += sum(CostPerBlock_reload[SharedDepth+1:])
 
         cost_history.append(cost)
         if iter % 100000 == 0:
@@ -210,20 +253,20 @@ def calc_SS_enumerateALL(datasetIdx = 8):
 
 
 
-
-
-def calc_SS():
+def calc_SS_approx():
     '''
     Ideally, for smartswitch, we should enumerate all possible permutation, and calculate cost for each one
     and keep the lowest one. However, our design does not have too many types of switch overhead (number of values in the overhead matrix)
     we can actually just randomly generate a few hundred samples and pick the lowest one
     '''
 
+    decompositions = get_decomposition()
+
 
     print('\nSS results:')
     for datasetIdx in range(9):
 
-        decompositions = get_decomposition()
+
 
 
         # for datasets (Idx = 0,1,2,3,5,6) who have 6-layer, BranchLoc = [0,1,4], otherwise BranchLoc = [0,2,3] (Idx = 4,7,8)
@@ -241,8 +284,8 @@ def calc_SS():
 
         mat = cal_Matrix(N = N, decomposition = decompositions[datasetIdx]) # for SmartSwitch, calculate all datasets once, you need to write all decompositions into the variable 'decompositions'
 
-        CostPerBlock_inference = get_CostPerBlock(CostPerLayer_inference, BranchLoc)
-        CostPerBlock_reload = get_CostPerBlock(CostPerLayer_reload, BranchLoc)
+        CostPerBlock_inference = get_CostPerBlock(CostPerLayer_inference[datasetIdx], BranchLoc)
+        CostPerBlock_reload = get_CostPerBlock(CostPerLayer_reload[datasetIdx], BranchLoc)
 
 
 
@@ -262,26 +305,32 @@ def calc_SS():
             for t_curr, t_next in zip(order_ext, order_ext[1:]):
                 SharedDepth = mat[t_curr][t_next]
                 transition.append(SharedDepth)
-                cost += sum(CostPerBlock_inference[datasetIdx][SharedDepth+1:])
-                cost += sum(CostPerBlock_reload[datasetIdx][SharedDepth+1:])
+                cost += sum(CostPerBlock_inference[SharedDepth+1:])
+                cost += sum(CostPerBlock_reload[SharedDepth+1:])
+
+            # for datasetIdx = 8 (HHAR), as HHAR has only 6 tasks, we need to time it with a multiplier
+            if datasetIdx == 8:
+                cost /= (6 / 10)
 
             cost_history.append(cost)
-            # print(iter, order, transition, cost)
 
-        print('{} - min = {}'.format(datasetIdx, min(cost_history)))
-
+        print('{}(min): {:.2f}'.format(datasetIdx, min(cost_history)))
 
 
-def calc_memory():
+def calc_SS_approx_breakdown():
     '''
-    We calculate the memory usage of our proposed method
+    Ideally, for smartswitch, we should enumerate all possible permutation, and calculate cost for each one
+    and keep the lowest one. However, our design does not have too many types of switch overhead (number of values in the overhead matrix)
+    we can actually just randomly generate a few hundred samples and pick the lowest one
     '''
 
     decompositions = get_decomposition()
 
+    cost_history = []
+    cost_inference_history = []  # overhehad by inference
+    cost_weight_history = []  # overhead by weight reloading
 
-
-    memory_total = 0
+    print('\nSS results:')
     for datasetIdx in range(9):
 
 
@@ -299,7 +348,84 @@ def calc_memory():
         else:
             N = 10
 
-        MemoryPerBlock = get_CostPerBlock_new(MemoryPerLayer[datasetIdx], BranchLoc)
+
+        mat = cal_Matrix(N = N, decomposition = decompositions[datasetIdx]) # for SmartSwitch, calculate all datasets once, you need to write all decompositions into the variable 'decompositions'
+
+        CostPerBlock_inference = get_CostPerBlock(CostPerLayer_inference[datasetIdx], BranchLoc)
+        CostPerBlock_reload = get_CostPerBlock(CostPerLayer_reload[datasetIdx], BranchLoc)
+
+
+
+        order = list(range(N))
+
+        costs, cost_inferences, cost_weights = [], [], []  # save results from 100 iterations and then select the minimum one as final results
+        for iter in range(100):
+
+            random.shuffle(order)
+            transition = []
+
+            order = list(order)
+            order_ext = order + [order[0]]  #  we need to append
+
+            cost, cost_inference, cost_weight = 0, 0, 0
+            for t_curr, t_next in zip(order_ext, order_ext[1:]):
+                SharedDepth = mat[t_curr][t_next]
+                transition.append(SharedDepth)
+                cost += sum(CostPerBlock_inference[SharedDepth+1:])
+                cost += sum(CostPerBlock_reload[SharedDepth+1:])
+
+                cost_inference += sum(CostPerBlock_inference[SharedDepth + 1:])
+                cost_weight += sum(CostPerBlock_reload[SharedDepth + 1:])
+
+
+
+            # for datasetIdx = 8 (HHAR), as HHAR has only 6 tasks, we need to time it with a multiplier
+            if datasetIdx == 8:
+                cost /= (6 / 10)
+                cost_inference /= (6 / 10)
+                cost_weight /= (6 / 10)
+
+
+            costs.append(cost)
+            cost_inferences.append(cost_inference)
+            cost_weights.append(cost_weight)
+
+        print('{}(min): {:.2f}'.format(datasetIdx, min(costs)))
+
+        cost_history.append(min(costs))
+        cost_inference_history.append(cost_inferences[np.argmin(costs)])
+        cost_weight_history.append(cost_weights[np.argmin(costs)])
+
+
+    return cost_history, cost_inference_history, cost_weight_history
+
+
+def calc_memory():
+    '''
+    We calculate the memory usage of our proposed method
+    '''
+
+    decompositions = get_decomposition()
+
+
+
+    memory_total = 0
+    for datasetIdx in range(9):
+
+
+        # for datasets (Idx = 0,1,2,3,5,6) who have 6-layer, BranchLoc = [0,1,4], otherwise BranchLoc = [0,2,3] (Idx = 4,7,8)
+        if datasetIdx in [0, 1, 2, 3, 5, 6]:
+            BranchLoc = [0, 1, 4]
+        else:
+            BranchLoc = [0, 2, 3]
+
+        # if datasetIdx = 8 (HHAR), N is 6, as HHAR has only 6 tasks
+        if datasetIdx == 8:
+            N = 6
+        else:
+            N = 10
+
+        MemoryPerBlock = get_CostPerBlock(MemoryPerLayer[datasetIdx], BranchLoc)
         decomposition = decompositions[datasetIdx]
 
         memory = 0
@@ -311,7 +437,7 @@ def calc_memory():
             else:  # the middle two blocks, it depends on the decomposition
                 memory += MemoryPerBlock[i] * len(decomposition[i - 1])
 
-        # for datasetIdx = 8 (HHAR), as HHAR has only 6 tasks, we need to time it with a multiplxier
+        # for datasetIdx = 8 (HHAR), as HHAR has only 6 tasks, we need to time it with a multiplier
         if datasetIdx == 8:
             memory /= (6/10)
 
@@ -320,11 +446,27 @@ def calc_memory():
 
     print('\nAveraged memory usage of 10 tasks \nin our proposed method is: \n{:.2f}KB'.format(memory_total/9))
 
-calc_memory()
 
+def calc_avegbreakdown():
+
+    # for MTL
+    _, cost_inference_history, cost_weight_history = calc_MTL_breakdown()
+    print('\nMTL averaged breakdown:\ninference = {:.2f}\nweight-reloading={:.2f}'.format(np.average(cost_inference_history), np.average(cost_weight_history)))
+
+    # for our method
+    _, cost_inference_history, cost_weight_history = calc_SS_approx_breakdown()
+    print('\nSS averaged breakdown:\ninference = {:.2f}\nweight-reloading={:.2f}'.format(np.average(cost_inference_history), np.average(cost_weight_history)))
+
+
+
+# calc_memory()
 
 # calc_MTL()
-# calc_SS()
+# calc_SS_approx()
+
+
+calc_avegbreakdown()
+
 
 
 
