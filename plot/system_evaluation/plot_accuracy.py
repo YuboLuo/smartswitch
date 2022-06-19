@@ -50,7 +50,7 @@ plt.yticks( fontsize=fontsize)
 # bbox_to_anchor = (x0, y0, width, height)
 legend = plt.legend(bbox_to_anchor=(-0.1, 0.92, 1.1,1), loc=3, shadow=False,mode='expand',ncol=6,fontsize='x-large',frameon=False)
 
-plt.xlabel('Datasets', fontsize=fontsize)
+# plt.xlabel('Datasets', fontsize=fontsize)
 plt.ylabel('Accuracy (%)',fontsize=fontsize)
 
 
@@ -58,7 +58,7 @@ plt.ylabel('Accuracy (%)',fontsize=fontsize)
 fig.set_size_inches(8, 2.6)
 plt.subplots_adjust(
     left=0.099,
-    bottom=0.22,
+    bottom=0.16,
     right=0.992,
     top=0.85,
     wspace=0.2,

@@ -25,6 +25,9 @@ CostPerLayer_inference = np.transpose(values1)  # layer-wise inference time
 values2 = df.values[20:26,1:10]  # layer-wise weight-reloading time or energy overhead
 CostPerLayer_reload = np.transpose(values2) # layer-wise weights-reloading time
 
+values3 = df.values[47:53,1:10]  # layer-wise weight-reloading time or energy overhead
+MemoryPerLayer = np.transpose(values3) # layer-wise weights-reloading time
+
 
 def get_CostPerBlock(CostPerLayer, BranchLoc):
     '''
@@ -42,6 +45,26 @@ def get_CostPerBlock(CostPerLayer, BranchLoc):
                        sum(CostPerLayer[i][BranchLoc[0]+1:BranchLoc[1]+1]),   # block_1
                        sum(CostPerLayer[i][BranchLoc[1]+1:BranchLoc[2]+1]),   # block_2
                        sum(CostPerLayer[i][BranchLoc[2]+1:])]           # block_3
+
+    return CostPerBlock
+
+
+def get_CostPerBlock_new(CostPerLayer, BranchLoc):
+    '''
+    convert the layer-wise cost to block-wise cost according to the locations of branch out points
+    :param CostPerLayer: an 2d array, layer-wise cost, row: dataset, col: layer
+    :param BranchLoc: the index of branch locations
+    :return: an 1d array, block-wise cost
+    '''
+
+    # n_row, _ = CostPerLayer.shape
+    # CostPerBlock = np.zeros((4), dtype=object) # we only have three branch points, so we have 4 blocks in total
+
+    # for i in range(n_row):
+    CostPerBlock = [sum(CostPerLayer[:BranchLoc[0]+1]),           # block_0 - always shared by all tasks
+                   sum(CostPerLayer[BranchLoc[0]+1:BranchLoc[1]+1]),   # block_1
+                   sum(CostPerLayer[BranchLoc[1]+1:BranchLoc[2]+1]),   # block_2
+                   sum(CostPerLayer[BranchLoc[2]+1:])]           # block_3
 
     return CostPerBlock
 
@@ -249,8 +272,59 @@ def calc_SS():
 
 
 
-calc_MTL()
-calc_SS()
+def calc_memory():
+    '''
+    We calculate the memory usage of our proposed method
+    '''
+
+    decompositions = get_decomposition()
+
+
+
+    memory_total = 0
+    for datasetIdx in range(9):
+
+
+
+
+        # for datasets (Idx = 0,1,2,3,5,6) who have 6-layer, BranchLoc = [0,1,4], otherwise BranchLoc = [0,2,3] (Idx = 4,7,8)
+        if datasetIdx in [0, 1, 2, 3, 5, 6]:
+            BranchLoc = [0, 1, 4]
+        else:
+            BranchLoc = [0, 2, 3]
+
+        # if datasetIdx = 8 (HHAR), N is 6, as HHAR has only 6 tasks
+        if datasetIdx == 8:
+            N = 6
+        else:
+            N = 10
+
+        MemoryPerBlock = get_CostPerBlock_new(MemoryPerLayer[datasetIdx], BranchLoc)
+        decomposition = decompositions[datasetIdx]
+
+        memory = 0
+        for i in range(4):
+            if i == 0:  # the 1st block, all tasks share the 1st block
+                memory += MemoryPerBlock[i]
+            elif i == 3:  # the last block, all tasks have their own last block
+                memory += MemoryPerBlock[i] * N
+            else:  # the middle two blocks, it depends on the decomposition
+                memory += MemoryPerBlock[i] * len(decomposition[i - 1])
+
+        # for datasetIdx = 8 (HHAR), as HHAR has only 6 tasks, we need to time it with a multiplxier
+        if datasetIdx == 8:
+            memory /= (6/10)
+
+        memory_total += memory
+        print(memory)
+
+    print('\nAveraged memory usage of 10 tasks \nin our proposed method is: \n{:.2f}KB'.format(memory_total/9))
+
+calc_memory()
+
+
+# calc_MTL()
+# calc_SS()
 
 
 

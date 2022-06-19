@@ -5,7 +5,7 @@ import pandas as pd
 
 
 board = 'msp'
-board = 'pico'
+# board = 'pico'
 
 # To open Workbook
 file = "comparison.xlsx"
@@ -50,14 +50,14 @@ plt.yticks([0,100,200,300,400,500,600,700], fontsize=fontsize)
 legend = plt.legend(bbox_to_anchor=(-0.09, 0.96, 1.1,1), loc=3, shadow=False,mode='expand',ncol=6,fontsize='x-large',frameon=False)
 
 
-plt.xlabel('Datasets', fontsize=fontsize)
+# plt.xlabel('Datasets', fontsize=fontsize)
 plt.ylabel('Energy overhead (mJ)',fontsize=fontsize)
 
 
 fig.set_size_inches(8, 2.6)
 plt.subplots_adjust(
     left=0.097,
-    bottom=0.23,
+    bottom=0.16,
     right=0.992,
     top=0.848,
     wspace=0.2,
