@@ -50,7 +50,7 @@ plt.yticks([0,2,4,6,8,10], fontsize=fontsize)
 
 # bbox_to_anchor = (x0, y0, width, height)
 # legend = plt.legend(bbox_to_anchor=(0, 0.98, 1.,1), loc=3, shadow=False,mode='expand',ncol=6,fontsize='large')
-legend = plt.legend(bbox_to_anchor=(0, 0.96, 1.0,1), loc=3, shadow=False,mode='expand',ncol=6,fontsize='x-large',frameon=False)
+legend = plt.legend(bbox_to_anchor=(0, 0.96, 1.0,1), loc=3, shadow=False,mode='expand',ncol=2,fontsize='x-large',frameon=False)
 
 
 # plt.xlabel('Datasets', fontsize=fontsize)
@@ -67,7 +67,7 @@ plt.subplots_adjust(
     hspace=0.2,
 )
 fig.show()
-fig.savefig("inferencetime_wild.pdf")
+fig.savefig("timeoverhead_wild.pdf")
 
 
 

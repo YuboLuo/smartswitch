@@ -5,7 +5,7 @@ import pandas as pd
 
 
 board = 'msp'
-# board = 'pico'
+board = 'pico'
 
 # To open Workbook
 file = "comparison.xlsx"
@@ -69,7 +69,7 @@ plt.subplots_adjust(
     hspace=0.2,
 )
 fig.show()
-fig.savefig("inferencetime_"+ board + ".pdf")
+fig.savefig("timeoverhead_"+ board + ".pdf")
 
 
 

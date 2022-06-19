@@ -44,7 +44,7 @@ rects13 = ax.bar(x + 1.5 * width, values[2,:], width*width_ctr, label='Antler',c
 # ax.margins(x=0.01)
 ax.set_xticklabels(['Presence\ndetection', 'Mask\ndetection', 'Person\nidentification', 'Emotion\nclassification'])
 plt.xticks( range(len(x)),fontsize=fontsize-2, rotation=0)
-plt.yticks( [0,0.2,0.4,0.6,0.8,1.0], fontsize=fontsize)
+plt.yticks( [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0], fontsize=fontsize)
 
 
 # bbox_to_anchor = (x0, y0, width, height)
@@ -55,7 +55,7 @@ plt.ylabel('Accuracy (%)',fontsize=fontsize)
 
 
 
-fig.set_size_inches(8, 2.6)
+fig.set_size_inches(8, 3)
 plt.subplots_adjust(
     left=0.099,
     bottom=0.22,
