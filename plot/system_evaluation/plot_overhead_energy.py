@@ -12,7 +12,7 @@ file = "comparison.xlsx"
 
 xls = pd.ExcelFile(file)
 print(xls.sheet_names)
-sheet_name = 'timeoverhead_' + board
+sheet_name = 'energyoverhead_' + board
 df = xls.parse(sheet_name)
 
 datasets = df.values[0,1:10]
@@ -32,7 +32,6 @@ ax.grid(axis='y', linestyle=':', zorder = 0)
 
 width_ctr = 0.8
 
-
 rects11 = ax.bar(x - 2.5 * width, values[2,:], width*width_ctr, label='YONO',color='#1F77B4', edgecolor='#353337', zorder = 2)
 rects12 = ax.bar(x - 1.5 * width, values[1,:], width*width_ctr, label='NWS',color='#ffd1a9', edgecolor='#353337', zorder = 2)
 rects13 = ax.bar(x - 0.5 * width, values[0,:], width*width_ctr, label='NWV',color='#629fca', edgecolor='#353337', zorder = 2)
@@ -44,11 +43,7 @@ rects16 = ax.bar(x + 2.5 * width, values[5,:], width*width_ctr, label='Antler',c
 ax.margins(x=0.01)
 ax.set_xticklabels(datasets)
 plt.xticks( range(len(x)),fontsize=fontsize, rotation=0)
-
-if board == 'msp':
-    plt.yticks([0,20,40,60,80,100,120], fontsize=fontsize)
-else:
-    plt.yticks([0,3,6,9,12,15,18], fontsize=fontsize)
+plt.yticks([0,100,200,300,400,500,600,700], fontsize=fontsize)
 
 
 # bbox_to_anchor = (x0, y0, width, height)
@@ -56,12 +51,12 @@ legend = plt.legend(bbox_to_anchor=(-0.09, 0.96, 1.1,1), loc=3, shadow=False,mod
 
 
 # plt.xlabel('Datasets', fontsize=fontsize)
-plt.ylabel('Time overhead (s)',fontsize=fontsize)
+plt.ylabel('Energy overhead (mJ)',fontsize=fontsize)
 
 
 fig.set_size_inches(8, 2.6)
 plt.subplots_adjust(
-    left=0.098,
+    left=0.097,
     bottom=0.16,
     right=0.992,
     top=0.848,
@@ -69,8 +64,7 @@ plt.subplots_adjust(
     hspace=0.2,
 )
 fig.show()
-fig.savefig("timeoverhead_"+ board + ".pdf")
-
+fig.savefig("overhead_energy_"+ board + ".pdf")
 
 
 

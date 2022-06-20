@@ -34,9 +34,9 @@ for i in range(len(values)):
 
 width_ctr = 1
 
-rects11 = ax.bar(x - 1.5 * width, values[0,:], width*width_ctr, label='Vanilla',color='#1F77B4', edgecolor='#353337', zorder = 2)
-rects12 = ax.bar(x              , values[1,:], width*width_ctr, label='MTL',color='#ffd1a9', edgecolor='#353337', zorder = 2)
-rects13 = ax.bar(x + 1.5 * width, values[2,:], width*width_ctr, label='Antler',color='#629fca', edgecolor='#353337', zorder = 2)
+rects11 = ax.bar(x - 1.5 * width, values[0,:] * 100, width*width_ctr, label='Vanilla',color='#1F77B4', edgecolor='#353337', zorder = 2)
+rects12 = ax.bar(x              , values[1,:] * 100, width*width_ctr, label='MTL',color='#ffd1a9', edgecolor='#353337', zorder = 2)
+rects13 = ax.bar(x + 1.5 * width, values[2,:] * 100, width*width_ctr, label='Antler',color='#629fca', edgecolor='#353337', zorder = 2)
 # rects14 = ax.bar(x + 0.5 * width, values[3,:], width*width_ctr, label='Vanilla',color='#ffa352', edgecolor='#353337', zorder = 2)
 # rects15 = ax.bar(x + 1.5 * width, values[4,:], width*width_ctr, label='MTL',color='#3F5A8A', edgecolor='#353337', zorder = 2)
 # rects16 = ax.bar(x + 2.5 * width, values[5,:], width*width_ctr, label='SS',color='#8c0000', edgecolor='#353337', zorder = 2)
@@ -44,7 +44,7 @@ rects13 = ax.bar(x + 1.5 * width, values[2,:], width*width_ctr, label='Antler',c
 # ax.margins(x=0.01)
 ax.set_xticklabels(['Presence\ndetection', 'Mask\ndetection', 'Person\nidentification', 'Emotion\nclassification'])
 plt.xticks( range(len(x)),fontsize=fontsize-2, rotation=0)
-plt.yticks( [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0], fontsize=fontsize)
+plt.yticks( range(0,101,10), fontsize=fontsize)
 
 
 # bbox_to_anchor = (x0, y0, width, height)

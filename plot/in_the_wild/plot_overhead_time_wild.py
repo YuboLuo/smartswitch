@@ -11,10 +11,10 @@ xls = pd.ExcelFile(file)
 print(xls.sheet_names)
 
 df = xls.parse('overhead_audio')
-values_audio = np.transpose(df.values[1:4,2:3])[0]
+values_audio = np.transpose(df.values[1:4,1:2])[0]
 
 df = xls.parse('overhead_image')
-values_image = np.transpose(df.values[1:4,2:3])[0]
+values_image = np.transpose(df.values[1:4,1:2])[0]
 
 x = np.arange(values_image.shape[0])
 # print(values)
@@ -45,21 +45,21 @@ ax.set_xticklabels(['Vanilla', 'MTL', 'Antler'])
 plt.xticks( range(len(x)),fontsize=fontsize, rotation=0)
 
 
-plt.yticks([0,20,40,60,80,100,120], fontsize=fontsize)
+plt.yticks([0,2,4,6,8,10], fontsize=fontsize)
 
 
 # bbox_to_anchor = (x0, y0, width, height)
 # legend = plt.legend(bbox_to_anchor=(0, 0.98, 1.,1), loc=3, shadow=False,mode='expand',ncol=6,fontsize='large')
-legend = plt.legend(bbox_to_anchor=(0, 0.96, 1.0,1), loc=3, shadow=False,mode='expand',ncol=6,fontsize='x-large',frameon=False)
+legend = plt.legend(bbox_to_anchor=(0, 0.96, 1.0,1), loc=3, shadow=False,mode='expand',ncol=2,fontsize='x-large',frameon=False)
 
 
 # plt.xlabel('Datasets', fontsize=fontsize)
-plt.ylabel('Energy overhead (mJ)',fontsize=fontsize)
+plt.ylabel('Time overhead (s)',fontsize=fontsize)
 
 
 fig.set_size_inches(4, 2.6)
 plt.subplots_adjust(
-    left=0.195,
+    left=0.175,
     bottom=0.13,
     right=0.992,
     top=0.848,
@@ -67,7 +67,7 @@ plt.subplots_adjust(
     hspace=0.2,
 )
 fig.show()
-fig.savefig("energyoverhead_wild.pdf")
+fig.savefig("overhead_time_wild.pdf")
 
 
 
