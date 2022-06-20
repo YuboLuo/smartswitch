@@ -15,7 +15,7 @@ import itertools, more_itertools
 import time
 
 import xlsxwriter
-
+import random
 
 ##################################################################################################################
 # helper functions
@@ -92,11 +92,11 @@ def get_ComputationalSavings(Idx):
     '''
 
     # # layer-wise inference time array, this array comes from our experiment results
-    # timesavingsByLayer = [0.74, 3.81, 1.18, 0.073, 0.05, 0.008]  # MNIST
+    timesavingsByLayer = [0.74, 3.81, 1.18, 0.073, 0.05, 0.008]  # MNIST
     # timesavingsByLayer = [2.57, 5.25, 1.85, 0.048, 0.042, 0.009]  # CIFAR10
     # timesavingsByLayer = [2.57, 5.25, 1.85, 0.048, 0.042, 0.009]  # SVHN
     # timesavingsByLayer = [2.6,  5.28, 1.86, 0.048, 0.041, 0.004]  # GTSRB
-    timesavingsByLayer = [1.3,  3.01, 0.014, 0.017, 0.006]  # GSC
+    # timesavingsByLayer = [1.3,  3.01, 0.014, 0.017, 0.006]  # GSC
 
 
     timesavingsByBlock = get_segment_byBlock(timesavingsByLayer, Idx=Idx)
@@ -733,8 +733,10 @@ def plotQueue(queue, Type=1):
 
 def optimalTree(queue):
     '''
-    find out the optimal tree (with highest similarity score) for all budgets (all possible model sizes)
-    each budget (model size) has one optimal tree which has the highest similarity score
+    on June 20, 2022, we start to variety score and cost
+
+    find out the optimal tree (with the highest similarity score or the lowest variety score) for all budgets (all possible model sizes)
+    each budget (model size) has one optimal tree which has the highest similarity score or the lowest variety score
     :param queue: queue must have already been sorted - queue.sort(key=lambda x: (x[1], x[0]))
     :return:
     '''
@@ -742,7 +744,7 @@ def optimalTree(queue):
     print("Finding the optimal Tree...")
 
     dic = defaultdict(list)
-    score, budget, overhead = [], [], []
+    variety_score, budget, cost = [], [], []
 
     # # first, we find the highest overhead reduction for each budget
     for q in queue:  # q = [similarity score, model size, decomposition detail, switch overhead]
@@ -756,40 +758,51 @@ def optimalTree(queue):
             # q[1] - model size - as dic's key
             # score.append(q[0])
             budget.append(q[1])
-            overhead.append(q[3])
+            cost.append(q[3])
 
     # # second, we find the highest similarity score for each budget
     # # but we have to first re-sort queue
-    # # first sort by model size x[1] in ascending order, then by overhead reduction x[3] in descending order
-    queue.sort(key=lambda x: (x[1], -x[3]))
+    # # # first sort by model size x[1] in ascending order, then by overhead reduction x[3] in descending order
+    # queue.sort(key=lambda x: (x[1], -x[3]))
+
+    # on June 20, 2022, we use cost, so we have to sort by x[3] (cost) in ascending order
+    queue.sort(key=lambda x: (x[1], x[3]))
 
     dic = defaultdict(list)
-    score = []
+    variety_score = []
     for q in queue:
         if q[1] not in dic:
-            dic[q[1]].append(q[0])  # q[0] - similarity score of a tree
-            dic[q[1]].append(q[3])  # q[3] - switching overhead reduction
+            # q[1] is model size - we use it as dic's key
+            dic[q[1]].append(2 - q[0])  # q[0] - similarity score of a tree, variety score = 2 - similarity score
+            dic[q[1]].append(q[3])  # q[3] - cost
+            dic[q[1]].append(q[4])  # q[4] - overhead
             dic[q[1]].append(q[2])  # q[2] - decomposition detail of two middle layers
-            # q[1] - model size - as dic's key
-            score.append(q[0])
+
+            variety_score.append(2 - q[0])   # variety score = 2 - similarity score
             # budget.append(q[1])
 
+    print('\nPrinting out results:\nBudget   Variety_score   Cost       Overhead   Decomposition_detail')
     for key, value in dic.items():
-        print(key, value)
+        print('{:<9}{:.5f}         {:<2f}   {:.2f}       {}'.format(key, value[0], value[1], value[2], value[3]))
 
     # # plot score v.s. overhead
     '''
     Attention: we may have to remove the first few scores to make the curve smoother to avoid abrupt slop 
     '''
-    remove = 0
-    score, overhead, budget = score[remove:], overhead[remove:], budget[remove:]
+    remove = 1
+    variety_score, cost, budget = variety_score[remove:], cost[remove:], budget[remove:]
 
-    score, overhead = ascending(np.array(score)), descending(np.array(overhead))
-    # score, overhead = np.array(score), np.array(overhead)
+    # whether you want to smooth the line or not
+    smooth = True  # True or False
+    if smooth:
+        variety_score, cost = descending(np.array(variety_score)), ascending(np.array(cost))  # smooth the line
+    else:
+        variety_score, cost = np.array(variety_score), np.array(cost) # not smooth the line
 
     # # normalize by max-min normalization method
-    score = list((score - score.min()) / (score.max() - score.min()))
-    overhead = list((overhead - overhead.min()) / (overhead.max() - overhead.min()))
+    score = list((variety_score - variety_score.min()) / (variety_score.max() - variety_score.min()))
+    overhead = list((cost - cost.min()) / (cost.max() - cost.min()))
+
 
     return score, overhead, budget
 
@@ -853,23 +866,153 @@ def CalcSwitchOverheadReduction(queue, Idx, reduction=0):
             queue[idx].append(SavingCpt)  # for deciding locations of the three branch out points
 
 
+
+
+def CalcCost(queue, Idx, N):
+    '''
+    Jun 20, 2022
+    For 2022 sensys submission, we finally decided to use cost/variety instead of overhead-reduction/similarity-score
+    we now have some new definitions
+    by 'cost', we mean total time or energy required to run all tasks,
+    by 'overhead' itself, we mean the portion of cost that is due to switching. Before, we were using overhead to mean the cost
+
+    :param queue: a list of trees
+    :param Idx: location/index of the three branch out points, w.r.t RSM
+    :param N: number of tasks
+    :return: no return, directly append the calculated result to queue at each row
+    '''
+
+    '''
+    [an old way of calculating switching overhead, it does not apply anymore. But the background logic is the same.]
+    [help me understand how the total switching overhead reduction is calculated now]
+    we can use a symmetric matrix to store the task-wise switch overhead
+    the maximum overhead from one task to another is to switch 3 nodes
+    so the default total switch overhead for all possible pairs is 3 * the number of total pairs
+    for N tasks, the number of all pairs is 1+2+...+(N-1) = sum(range(N))
+    we then iterate the middle layers, if we find two tasks in one cluster, we decrease the overhead by 1
+    the reminding overhead is the final total switch overhead over all possible pairs
+    '''
+
+    def cal_Matrix(N, decomposition):
+        '''
+        [this function is copy-pasted from MTL_baseline.py]
+        calculate a Matrix that shows the deepest shared block index among each task pair
+        the cost of transferring from one task to another only depends on how deep the two tasks share blocks
+        '''
+
+        # decomposition = [   [[0, 1, 2, 3], [4]], [[0], [2], [1, 3], [4]]   ]
+        # N = taskNum # number of tasks
+
+        # # we use Matrix to show the deepest shared block index among each task pair
+        Matrix = np.zeros((N, N), dtype=int)
+        for i in range(N - 1):
+            for j in range(i + 1, N):
+                # # for each pair of tasks, we search them in the decomposition tree
+                # # to see how deep they can go until they are branched out into different branches
+
+                for idx, layer in enumerate(decomposition):
+                    for cluster in layer:
+                        if i in cluster and j in cluster:
+                            # # decomposition only contains the two middle layers decomposition details
+                            # # so when idx = 0, it actually means they share up to the (idx + 1) layer
+                            Matrix[i][j] = Matrix[j][i] = idx + 1
+        return Matrix
+
+    # # cpt_byBlock, computational overhead of each block w.r.t time, we have 4 blocks, so it has 4 values
+    # # wgt_byBlock, weight-reloading overhead of each block w.r.t time
+    sizeByBlock = get_weightsize_byBlock(Idx)
+    wgt_byBlock = [w * 2 / 64000 * 0.6 for w in sizeByBlock]  # w is number of params, we use 16bit, so w * 2 is the total byte of memory
+    cpt_byBlock = get_ComputationalSavings(Idx)  # based on our hardware experiment, it take 600ms to read 64KB
+
+    for idx, q in enumerate(queue):
+
+        # an example of q: [0.8002560306341132, 3, [[[0, 1, 2, 3, 4, 5, 6]], [[0, 1, 2, 3, 4, 5, 6]]]]
+        # q[0] - similarity score
+        # q[1] - budget size
+        # q[2] - decomposition detail
+
+        # q[3] - we will append a q[3] below for saving cost
+        # q[4] - we will also append a q[4] below for saving overhead
+
+        # # overheadCpt: computational overhead w.r.t time
+        # # overheadWgt: weights-reloading overhead w.r.t time
+        overheadWgt, overheadCpt = 0, 0  # reset for each q
+
+        mat = cal_Matrix(N=N, decomposition=q[2]) # calculate a matrix about pair-wise sharing depth
+
+        cost_history = []
+        overhead_history = []
+        order = list(range(N))
+        for iter in range(10):  # since we are using the cost which actually depends on the execution order
+                                # we randomly generate some orders and use the averaged cost as the cost
+                                # the more iterations you use, the stabler the final decomposition result will be but it will also be slower
+                                # I tested on N = 5 / 7, using 10 iter is stable enough
+            random.shuffle(order)
+            cost = 0
+            overhead = 0
+            transition = []
+
+            order = list(order)
+            order_ext = order + [order[0]]  #  we need to append the first task to the last one to form a loop
+
+            for t_curr, t_next in zip(order_ext, order_ext[1:]):
+                SharedDepth = mat[t_curr][t_next]
+                transition.append(SharedDepth)
+
+                # cost means total time or energy required to run all tasks - inference + weight-reloading
+                cost += sum(cpt_byBlock[SharedDepth+1:])
+                cost += sum(wgt_byBlock[SharedDepth+1:])
+
+                # overhead means the portion of cost that is due to switching - weight-reloading
+                overhead += sum(wgt_byBlock[SharedDepth+1:])
+
+            cost_history.append(cost)
+            overhead_history.append(overhead)
+
+        queue[idx].append(np.average(cost_history))  # append as q[3]
+        queue[idx].append(np.average(overhead_history))  # append as q[4]
+
+        # for idx2, layer in enumerate(q[2]):  # q contains an optimal decomposition tree's middle two blocks which is q[2]
+        #     for cluster in layer:
+        #
+        #         # # the decomposition tree only has two middle layers
+        #         if idx2 == 0:  # for the 1st middle layer
+        #             SavingCpt += sum(range(len(cluster))) * cpt_byBlock[1]
+        #             SavingWgt += sum(range(len(cluster))) * wgt_byBlock[1]
+        #         elif idx2 == 1:  # for the 2nd middle layer
+        #             SavingCpt += sum(range(len(cluster))) * cpt_byBlock[2]
+        #             SavingWgt += sum(range(len(cluster))) * wgt_byBlock[2]
+
+
+        # queue[idx].append(SavingWgt + SavingCpt) # append the total savings
+
+        # if reduction == 0:
+        #     queue[idx].append(SavingWgt + SavingCpt)
+        # elif reduction == 1:
+        #     queue[idx].append(SavingWgt)  # for deciding the budget using cross point of reduction and similarity
+        # elif reduction == 2:
+        #     queue[idx].append(SavingCpt)  # for deciding locations of the three branch out points
+
+
 def plotTraderOff_oneTree(Idx, N=5):
     # plot the tradeoff between overhead reduction and similarity score to decide budget
     RSM = np.load('rsm.npy')
     print('Idx = {}'.format(Idx))
 
     queue = clustering(RSM, Idx, N=N)  # group tasks according to similarity score
-    CalcSwitchOverheadReduction(queue, Idx, reduction=1)  # calculate switching overhead reduction for each tree in q
-    score, overhead, budget = optimalTree(queue)
+    # CalcSwitchOverheadReduction(queue, Idx, reduction=1)  # calculate switching overhead reduction for each tree in q
+    CalcCost(queue, Idx, N)
+    variety_score, cost, budget = optimalTree(queue)
+
 
     fontsize = 13
     linewidth = 2
 
     fig, ax = plt.subplots()
 
-    x = np.linspace(0, 1, len(score))
-    ax.plot(x, score, 'r', label='Similarity score', linewidth=linewidth)
-    ax.plot(x, overhead, 'b', label='Overhead reduction', linewidth=linewidth)
+    x = np.linspace(0, 1, len(variety_score))
+    ax.plot(x, variety_score, 'r', label='Variety score', linewidth=linewidth)
+    ax.plot(x, cost, 'b', label='Cost', linewidth=linewidth)
 
     ##############################################
     # ### write trade off data into excel file
@@ -879,7 +1022,7 @@ def plotTraderOff_oneTree(Idx, N=5):
 
     row, col = 1, 0
     # Iterate over the data and write it out row by row.
-    for s, o, b in zip(score, overhead, budget):
+    for s, o, b in zip(variety_score, cost, budget):
         worksheet.write(row, col, s)
         worksheet.write(row, col + 1, o)
         worksheet.write(row, col + 2, b)
@@ -991,7 +1134,7 @@ def findLocactionOfBP(N=7, LayerNum=5, BranchNum=3):
 
 RSM = np.load('rsm.npy')
 print('RSM reloaded...')
-plotTraderOff_oneTree(Idx=[0,2,4], N=5)
+plotTraderOff_oneTree(Idx=[0,1,4], N=7)
 
 
 # # find the location arrangement of branch out points

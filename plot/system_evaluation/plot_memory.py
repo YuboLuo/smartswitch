@@ -11,7 +11,7 @@ def autolabel(rects,ax):
     """Attach a text label above each bar in *rects*, displaying its height."""
     for index,rect in enumerate(rects):
         height = rect.get_height()
-        x_offset = [0.2, 0, 0, 0, -0.1]
+        x_offset = [0.2, 0.3, 0, 0, 0, -0.1]
         x = rect.get_x() + rect.get_width() / 2 + x_offset[index]
         ax.annotate('{}KB'.format(height),
                     xy=(x, height - 15),
@@ -45,17 +45,17 @@ rects = ax.bar(x, values[0,:], width, color='#629fca')
 
 autolabel(rects, ax)
 
-ax.set_xticklabels(['Vanilla','Antler','NWS','NWV','YONO'])
+ax.set_xticklabels(['Vanilla', 'MTL','Antler','NWS','NWV','YONO'])
 plt.xticks( range(len(x)),fontsize=fontsize, rotation=0)
 plt.yticks( fontsize=fontsize)
 
-ax.set_ylim(0,1350)
+ax.set_ylim(0,1500)
 
 
 # plt.xlabel('Methods', fontsize=fontsize)
 plt.ylabel('Memory usage (KB)',fontsize=fontsize)
 
-fig.set_size_inches(4, 2.5)
+fig.set_size_inches(5, 2.5)
 plt.subplots_adjust(
     left=0.22,
     bottom=0.15,

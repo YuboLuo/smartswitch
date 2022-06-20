@@ -267,8 +267,6 @@ def calc_SS_approx():
     for datasetIdx in range(9):
 
 
-
-
         # for datasets (Idx = 0,1,2,3,5,6) who have 6-layer, BranchLoc = [0,1,4], otherwise BranchLoc = [0,2,3] (Idx = 4,7,8)
         if datasetIdx in [0, 1, 2, 3, 5, 6]:
             BranchLoc = [0, 1, 4]
@@ -286,7 +284,6 @@ def calc_SS_approx():
 
         CostPerBlock_inference = get_CostPerBlock(CostPerLayer_inference[datasetIdx], BranchLoc)
         CostPerBlock_reload = get_CostPerBlock(CostPerLayer_reload[datasetIdx], BranchLoc)
-
 
 
         cost_history = []
@@ -319,9 +316,7 @@ def calc_SS_approx():
 
 def calc_SS_approx_breakdown():
     '''
-    Ideally, for smartswitch, we should enumerate all possible permutation, and calculate cost for each one
-    and keep the lowest one. However, our design does not have too many types of switch overhead (number of values in the overhead matrix)
-    we can actually just randomly generate a few hundred samples and pick the lowest one
+    breakdown version: separate inference overhead and weight-reloading overhead
     '''
 
     decompositions = get_decomposition()
