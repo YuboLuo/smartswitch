@@ -746,31 +746,13 @@ def optimalTree(queue):
     dic = defaultdict(list)
     variety_score, budget, cost = [], [], []
 
-    # # first, we find the highest overhead reduction for each budget
-    for q in queue:  # q = [similarity score, model size, decomposition detail, switch overhead]
-
-        # queue is sorted first by model size (in ascending order) and then by similarity score (in descending order)
-        # so, the first tree of a new model_size is the optimal one which has the highest similarity score
-        if q[1] not in dic:
-            dic[q[1]].append(q[0])  # q[0] - similarity score of a tree
-            dic[q[1]].append(q[3])  # q[3] - switching overhead reduction
-            dic[q[1]].append(q[2])  # q[2] - decomposition detail of two middle layers
-            # q[1] - model size - as dic's key
-            # score.append(q[0])
-            budget.append(q[1])
-            cost.append(q[3])
-
-    # # second, we find the highest similarity score for each budget
-    # # but we have to first re-sort queue
-    # # # first sort by model size x[1] in ascending order, then by overhead reduction x[3] in descending order
-    # queue.sort(key=lambda x: (x[1], -x[3]))
-
     # on June 20, 2022, we use cost, so we have to sort by x[3] (cost) in ascending order
+    # first sort by budget x[1] then sort by cost x[3]
     queue.sort(key=lambda x: (x[1], x[3]))
 
     dic = defaultdict(list)
     variety_score = []
-    for q in queue:
+    for q in queue:       # q = [similarity score, model size, decomposition detail, cost, overhead]
         if q[1] not in dic:
             # q[1] is model size - we use it as dic's key
             dic[q[1]].append(2 - q[0])  # q[0] - similarity score of a tree, variety score = 2 - similarity score
@@ -779,7 +761,8 @@ def optimalTree(queue):
             dic[q[1]].append(q[2])  # q[2] - decomposition detail of two middle layers
 
             variety_score.append(2 - q[0])   # variety score = 2 - similarity score
-            # budget.append(q[1])
+            budget.append(q[1])
+            cost.append(q[3])
 
     print('\nPrinting out results:\nBudget   Variety_score   Cost       Overhead   Decomposition_detail')
     for key, value in dic.items():
@@ -972,27 +955,6 @@ def CalcCost(queue, Idx, N):
         queue[idx].append(np.average(cost_history))  # append as q[3]
         queue[idx].append(np.average(overhead_history))  # append as q[4]
 
-        # for idx2, layer in enumerate(q[2]):  # q contains an optimal decomposition tree's middle two blocks which is q[2]
-        #     for cluster in layer:
-        #
-        #         # # the decomposition tree only has two middle layers
-        #         if idx2 == 0:  # for the 1st middle layer
-        #             SavingCpt += sum(range(len(cluster))) * cpt_byBlock[1]
-        #             SavingWgt += sum(range(len(cluster))) * wgt_byBlock[1]
-        #         elif idx2 == 1:  # for the 2nd middle layer
-        #             SavingCpt += sum(range(len(cluster))) * cpt_byBlock[2]
-        #             SavingWgt += sum(range(len(cluster))) * wgt_byBlock[2]
-
-
-        # queue[idx].append(SavingWgt + SavingCpt) # append the total savings
-
-        # if reduction == 0:
-        #     queue[idx].append(SavingWgt + SavingCpt)
-        # elif reduction == 1:
-        #     queue[idx].append(SavingWgt)  # for deciding the budget using cross point of reduction and similarity
-        # elif reduction == 2:
-        #     queue[idx].append(SavingCpt)  # for deciding locations of the three branch out points
-
 
 def plotTraderOff_oneTree(Idx, N=5):
     # plot the tradeoff between overhead reduction and similarity score to decide budget
@@ -1084,18 +1046,40 @@ def findLocactionOfBP(N=7, LayerNum=5, BranchNum=3):
     dic_final = {}
     for Idx in itertools.combinations([i for i in range(LayerNum)], BranchNum):
         queue = clustering(RSM, Idx, N=N)  # group tasks according to similarity score
-        CalcSwitchOverheadReduction(queue, Idx, reduction=0)  # calculate overhead reduction, use SavingCpt
+
+        # CalcSwitchOverheadReduction(queue, Idx, reduction=0)  # calculate overhead reduction, use SavingCpt
+        CalcCost(queue, Idx, N)
 
         # # first sort by model size x[1] in ascending order, then by overhead reduction x[3] in descending order
-        queue.sort(key=lambda x: (x[1], -x[3]))
+        # queue.sort(key=lambda x: (x[1], -x[3]))
+
+        queue.sort(key=lambda x: (x[1], x[3]))
+
 
         dic = defaultdict(int)
+        w1, w2 = 50, 1  # w1: weight of variety score; w2: weight of cost
         for q in queue:
-            if q[1] not in dic:  # q[1] is model size, q[3] is overhead reduction
-                dic[q[1]] = q[3]  # log the max reduction of each budget
+            if q[1] not in dic:  # q[1] is model size, q[3] is cost
+
+                '''
+                we have three ways to evaluate the BPlocaiton
+                case (1) only use cost
+                case (2) only use variety score
+                case (3) use weighted cost and variety score
+                '''
+
+                dic[q[1]] = q[3]  # case (1)
+                dic[q[1]] = 2 - q[0]  # case (2)
+                dic[q[1]] = (2 - q[0]) * w1 + q[3] * w2  # case (3)
+
 
         sum_reduction = sum(dic.values())
         print(Idx, sum_reduction)
+
+
+
+        # for v in dic.values():
+        #     print(v)
 
         # if sum_reduction > Max_value:
         #     Max_value = sum_reduction
@@ -1107,7 +1091,7 @@ def findLocactionOfBP(N=7, LayerNum=5, BranchNum=3):
     print('\n\n**********')
     print('N = {}'.format(N))
     print('value - location arrangement')
-    for k, v in sorted(dic_final.items(), key=lambda x: x[1], reverse=True):
+    for k, v in sorted(dic_final.items(), key=lambda x: x[1], reverse=False):
         print('{:.1f} - {}'.format(v, [int(i) for i in k]))
 
 
@@ -1132,18 +1116,18 @@ def findLocactionOfBP(N=7, LayerNum=5, BranchNum=3):
 # print('RSM saved...')
 
 
-RSM = np.load('rsm.npy')
-print('RSM reloaded...')
-plotTraderOff_oneTree(Idx=[0,1,4], N=7)
+# RSM = np.load('rsm.npy')
+# print('RSM reloaded...')
+# plotTraderOff_oneTree(Idx=[0,1,4], N=7)
 
 
-# # find the location arrangement of branch out points
-# # change the layer-wise inference time in get_ComputationalSavings() for each dataset accordingly
-# print('\n\n')
-# start_time = time.time()
-# findLocactionOfBP(N=5, LayerNum=4, BranchNum=3)  # # for 6-layer design: LayerNum=5, BranchNum=3;
-#                                                  # # for 5-layer design: LayerNum=4, BranchNum=3;
-# print("--- {0:.2f} minutes ---".format((time.time() - start_time) / 60))
+# find the location arrangement of branch out points
+# change the layer-wise inference time in get_ComputationalSavings() for each dataset accordingly
+print('\n\n')
+start_time = time.time()
+findLocactionOfBP(N=6, LayerNum=5, BranchNum=3)  # # for 6-layer design: LayerNum=5, BranchNum=3;
+                                                 # # for 5-layer design: LayerNum=4, BranchNum=3;
+print("--- {0:.2f} minutes ---".format((time.time() - start_time) / 60))
 
 
 ########################### below is debug history, you can ignore ############################
