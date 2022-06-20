@@ -865,16 +865,6 @@ def CalcCost(queue, Idx, N):
     :return: no return, directly append the calculated result to queue at each row
     '''
 
-    '''
-    [an old way of calculating switching overhead, it does not apply anymore. But the background logic is the same.]
-    [help me understand how the total switching overhead reduction is calculated now]
-    we can use a symmetric matrix to store the task-wise switch overhead
-    the maximum overhead from one task to another is to switch 3 nodes
-    so the default total switch overhead for all possible pairs is 3 * the number of total pairs
-    for N tasks, the number of all pairs is 1+2+...+(N-1) = sum(range(N))
-    we then iterate the middle layers, if we find two tasks in one cluster, we decrease the overhead by 1
-    the reminding overhead is the final total switch overhead over all possible pairs
-    '''
 
     def cal_Matrix(N, decomposition):
         '''
