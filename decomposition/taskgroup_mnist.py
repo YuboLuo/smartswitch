@@ -764,9 +764,9 @@ def optimalTree(queue):
             budget.append(q[1])
             cost.append(q[3])
 
-    print('\nPrinting out results:\nBudget   Variety_score   Cost       Overhead   Decomposition_detail')
+    print('\nPrinting out results:\nBudget   Variety_score   Cost    Overhead   Decomposition_detail')
     for key, value in dic.items():
-        print('{:<9}{:.5f}         {:<2f}   {:.2f}       {}'.format(key, value[0], value[1], value[2], value[3]))
+        print('{:<9}{:.5f}         {:5.2f}   {:.3f}      {}'.format(key, value[0], value[1], value[2], value[3]))
 
     # # plot score v.s. overhead
     '''
@@ -1106,18 +1106,18 @@ def findLocactionOfBP(N=7, LayerNum=5, BranchNum=3):
 # print('RSM saved...')
 
 
-# RSM = np.load('rsm.npy')
-# print('RSM reloaded...')
-# plotTraderOff_oneTree(Idx=[0,1,4], N=7)
+RSM = np.load('rsm.npy')
+print('RSM reloaded...')
+plotTraderOff_oneTree(Idx=[0,1,4], N=5)
 
 
-# find the location arrangement of branch out points
-# change the layer-wise inference time in get_ComputationalSavings() for each dataset accordingly
-print('\n\n')
-start_time = time.time()
-findLocactionOfBP(N=6, LayerNum=5, BranchNum=3)  # # for 6-layer design: LayerNum=5, BranchNum=3;
-                                                 # # for 5-layer design: LayerNum=4, BranchNum=3;
-print("--- {0:.2f} minutes ---".format((time.time() - start_time) / 60))
+# # find the location arrangement of branch out points
+# # change the layer-wise inference time in get_ComputationalSavings() for each dataset accordingly
+# print('\n\n')
+# start_time = time.time()
+# findLocactionOfBP(N=6, LayerNum=5, BranchNum=3)  # # for 6-layer design: LayerNum=5, BranchNum=3;
+#                                                  # # for 5-layer design: LayerNum=4, BranchNum=3;
+# print("--- {0:.2f} minutes ---".format((time.time() - start_time) / 60))
 
 
 ########################### below is debug history, you can ignore ############################

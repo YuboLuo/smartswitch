@@ -31,6 +31,9 @@ df = xls.parse('memory')
 
 values = df.values[1:2,1:]
 values = np.asarray(values,dtype=int)
+
+values = np.delete(values, 1, 1)   # delete MTL baseline
+
 x = np.arange(values.shape[1])
 print(values)
 
@@ -45,7 +48,7 @@ rects = ax.bar(x, values[0,:], width, color='#629fca')
 
 autolabel(rects, ax)
 
-ax.set_xticklabels(['Vanilla', 'MTL','Antler','NWS','NWV','YONO'])
+ax.set_xticklabels(['Vanilla', 'Antler','NWS','NWV','YONO'])
 plt.xticks( range(len(x)),fontsize=fontsize, rotation=0)
 plt.yticks( fontsize=fontsize)
 

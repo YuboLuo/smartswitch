@@ -5,7 +5,7 @@ import pandas as pd
 
 
 board = 'msp'
-board = 'pico'
+# board = 'pico'
 
 # To open Workbook
 file = "comparison.xlsx"
@@ -22,7 +22,7 @@ print(values)
 
 fontsize = 15
 linewidth = 2
-width = 0.14
+width = 0.15
 
 fig, ax = plt.subplots()
 
@@ -36,8 +36,8 @@ rects11 = ax.bar(x - 2.5 * width, values[2,:], width*width_ctr, label='YONO',col
 rects12 = ax.bar(x - 1.5 * width, values[1,:], width*width_ctr, label='NWS',color='#ffd1a9', edgecolor='#353337', zorder = 2)
 rects13 = ax.bar(x - 0.5 * width, values[0,:], width*width_ctr, label='NWV',color='#629fca', edgecolor='#353337', zorder = 2)
 rects14 = ax.bar(x + 0.5 * width, values[3,:], width*width_ctr, label='Vanilla',color='#ffa352', edgecolor='#353337', zorder = 2)
-rects15 = ax.bar(x + 1.5 * width, values[4,:], width*width_ctr, label='MTL',color='#3F5A8A', edgecolor='#353337', zorder = 2) # #bbd6e8
-rects16 = ax.bar(x + 2.5 * width, values[5,:], width*width_ctr, label='Antler',color='#8c0000', edgecolor='#353337', zorder = 2) # #bbd6e8
+# rects15 = ax.bar(x + 1.5 * width, values[4,:], width*width_ctr, label='MTL',color='#3F5A8A', edgecolor='#353337', zorder = 2) # #bbd6e8
+rects16 = ax.bar(x + 1.5 * width, values[5,:], width*width_ctr, label='Antler',color='#8c0000', edgecolor='#353337', zorder = 2) # #bbd6e8
 
 
 ax.margins(x=0.01)
