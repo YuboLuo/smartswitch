@@ -12,32 +12,48 @@ print(xls.sheet_names)
 
 df = xls.parse('overhead_audio')
 values_audio = np.transpose(df.values[1:4,1:2])[0]
+values_TSPCC = df.values[1:2,7:9][0]
 
 df = xls.parse('overhead_image')
 values_image = np.transpose(df.values[1:4,1:2])[0]
+values_TSPPC = df.values[1:2,7:9][0]
 
 values_audio = np.delete(values_audio, 1, 0) # delete MTL baseline
 values_image = np.delete(values_image, 1, 0)
 
-x = np.arange(values_image.shape[0])
+
 
 fontsize = 15
 linewidth = 2
-width = 0.2
+width = 0.32
 width_ctr = 1
 
 fig, ax = plt.subplots()
 
 ax.grid(axis='y', linestyle=':', zorder = 0)
 
+# we only have one data point for TSPPC and one data point for TSPCC
+# we form the two values into one variable
+array_TSPPC = [0, 0, values_TSPPC[0], 0]  # for time
+array_TSPCC = [0, 0, 0, values_TSPCC[0]]  # for time
 
+# expand to 4 numbers
+values_audio = np.concatenate((values_audio, np.asarray(([0, 0]))))
+values_image = np.concatenate((values_image, np.asarray(([0, 0]))))
+
+x = np.arange(4)
 
 rects11 = ax.bar(x - 0.6 * width, values_audio, width*width_ctr, label='Audio',color='#1F77B4', edgecolor='#353337', zorder = 2)
 rects12 = ax.bar(x + 0.6 * width, values_image, width*width_ctr, label='Image',color='#ffd1a9', edgecolor='#353337', zorder = 2)
 
+rects13 = ax.bar(x, array_TSPPC, width*width_ctr, color='#ffd1a9', edgecolor='#353337', zorder = 2)
+rects14 = ax.bar(x, array_TSPCC, width*width_ctr, color='#1F77B4', edgecolor='#353337', zorder = 2)
+
+
+
 # ax.margins(x=0.01)
-ax.set_xticklabels(['Vanilla', 'Antler'])
-plt.xticks( range(len(x)),fontsize=fontsize, rotation=0)
+ax.set_xticklabels(['Vanilla', 'Antler', 'Antler\nTSPPC', 'Antler\nTSPCC'])
+plt.xticks( range(len(x)),fontsize=fontsize-2, rotation=0)
 
 
 plt.yticks([0,2,4,6,8,10], fontsize=fontsize)
@@ -52,8 +68,8 @@ plt.ylabel('Time overhead (s)',fontsize=fontsize)
 fig.set_size_inches(3.5, 2.6)
 plt.subplots_adjust(
     left=0.23,
-    bottom=0.13,
-    right=0.992,
+    bottom=0.23,
+    right=0.96,
     top=0.848,
     wspace=0.2,
     hspace=0.2,

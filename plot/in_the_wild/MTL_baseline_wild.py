@@ -7,29 +7,28 @@ import numpy as np
 import pandas as pd
 import random
 
-# type = 1  # audio
+type = 1  # audio
 type = 0  # image
 
+print('{}_based experiment'.format(['image','audio'][type]))
 
 # To open Workbook
 file = "comparison_wild.xlsx"
 
 xls = pd.ExcelFile(file)
 print(xls.sheet_names)
-df = xls.parse('in_the_wild_image')
 
-if type == 1:
-    values1 = df.values[7:12,1:3]  # layer-wise inference time or energy overhead
-else:
-    values1 = df.values[7:14,1:3]  # layer-wise inference time or energy overhead
-
-CostPerLayer_inference = np.transpose(values1)  # layer-wise inference time
 
 if type == 1:  # audio
+    df = xls.parse('overhead_audio')
+    values1 = df.values[7:12, 1:3]  # layer-wise inference time or energy overhead
     values2 = df.values[16:21,1:3]  # layer-wise weight-reloading time or energy overhead
 else:  # image
+    df = xls.parse('overhead_image')
+    values1 = df.values[7:14, 1:3]  # layer-wise inference time or energy overhead
     values2 = df.values[18:25, 1:3]  # layer-wise weight-reloading time or energy overhead
 
+CostPerLayer_inference = np.transpose(values1)  # layer-wise inference time
 CostPerLayer_reload = np.transpose(values2) # layer-wise weights-reloading time
 
 
@@ -85,7 +84,7 @@ def get_decomposition():
 
     if type == 1:  # audio
         d0 = [[[4], [0, 1, 2, 3]], [[4], [0, 1, 2], [3]]]  # audio_based experiment
-        d1 = [[[4], [0, 1, 2, 3]], [[4], [0, 1, 2], [3]]]  # image_based experiment
+        d1 = [[[4], [0, 1, 2, 3]], [[4], [0, 1, 2], [3]]]
     else:  # image
         d0 = [[[0], [1, 2, 3]], [[0], [1, 2, 3]]]
         d1 = [[[0], [1, 2, 3]], [[0], [1, 2, 3]]]
@@ -101,17 +100,20 @@ def calc_MTL():
     :return:
     '''
 
+    overheadtype = ['time', 'energy']
     print('\nMTL results:')
-    for datasetIdx in range(2):
+    for Idx in range(2):
 
         #  datasetIdx - which dataset to use
 
-        BranchLoc = [0,2,3]
+
 
         if type == 1:
-            N = 5 # audio_based experiment has 5 tasks
+            N = 5  # audio_based experiment has 5 tasks
+            BranchLoc = [0, 2, 3]  # audio_based experiment has 5 layers
         else:
-            N = 4 # image_based experiment has 4 tasks
+            N = 4  # image_based experiment has 4 tasks
+            BranchLoc = [0, 4, 5]  # image_based experiment has 7 layers
 
 
         CostPerBlock_inference = get_CostPerBlock(CostPerLayer_inference, BranchLoc)
@@ -124,11 +126,11 @@ def calc_MTL():
         cost = 0
         for i in range(len(order_ext) - 1):
             SharedDepth = 0  # we assume for MTL, each task pair always only shares the first block of weights
-            cost += sum(CostPerBlock_inference[datasetIdx][SharedDepth + 1:])
-            cost += sum(CostPerBlock_reload[datasetIdx][SharedDepth + 1:])
+            cost += sum(CostPerBlock_inference[Idx][SharedDepth + 1:])
+            cost += sum(CostPerBlock_reload[Idx][SharedDepth + 1:])
 
         cost_history.append(cost)
-        print(datasetIdx,cost)
+        print(Idx,overheadtype[Idx],cost)
 
 
 
@@ -141,26 +143,22 @@ def calc_SS():
     we can actually just randomly generate a few hundred samples and pick the lowest one
     '''
 
-
+    overheadtype = ['time', 'energy']
     print('\nSS results:')
-    for datasetIdx in range(2):
+    for Idx in range(2):
 
         decompositions = get_decomposition()
 
 
-        # for datasets (Idx = 0,1,2,3,5,6) who have 6-layer, BranchLoc = [0,1,4], otherwise BranchLoc = [0,2,3] (Idx = 4,7,8)
-        if datasetIdx in [0, 1, 2, 3, 5, 6]:
-            BranchLoc = [0, 1, 4]
-        else:
-            BranchLoc = [0, 2, 3]
-
         if type == 1:
-            N = 5 # audio_based experiment has 5 tasks
+            N = 5  # audio_based experiment has 5 tasks
+            BranchLoc = [0, 2, 3]  # audio_based experiment has 5 layers
         else:
-            N = 4 # image_based experiment has 4 tasks
+            N = 4  # image_based experiment has 4 tasks
+            BranchLoc = [0, 4, 5]  # image_based experiment has 7 layers
 
 
-        mat = cal_Matrix(N = N, decomposition = decompositions[datasetIdx]) # for SmartSwitch, calculate all datasets once, you need to write all decompositions into the variable 'decompositions'
+        mat = cal_Matrix(N = N, decomposition = decompositions[Idx]) # for SmartSwitch, calculate all datasets once, you need to write all decompositions into the variable 'decompositions'
 
         CostPerBlock_inference = get_CostPerBlock(CostPerLayer_inference, BranchLoc)
         CostPerBlock_reload = get_CostPerBlock(CostPerLayer_reload, BranchLoc)
@@ -182,18 +180,135 @@ def calc_SS():
             for t_curr, t_next in zip(order_ext, order_ext[1:]):
                 SharedDepth = mat[t_curr][t_next]
                 transition.append(SharedDepth)
-                cost += sum(CostPerBlock_inference[datasetIdx][SharedDepth+1:])
-                cost += sum(CostPerBlock_reload[datasetIdx][SharedDepth+1:])
+                cost += sum(CostPerBlock_inference[Idx][SharedDepth+1:])
+                cost += sum(CostPerBlock_reload[Idx][SharedDepth+1:])
 
             cost_history.append(cost)
             # print(iter, order, transition, cost)
 
-        print('{} - min = {}'.format(datasetIdx, min(cost_history)))
+        print('{} - {} - min = {}'.format(Idx, overheadtype[Idx], min(cost_history)))
+
+
+def calc_SS_TSPPC():
+    '''
+    calculate the overhead results for TSPPC version
+    we impose a precedence constraint which requires task_0 (presence detection) be done before all other tasks
+    '''
+
+    overheadtype = ['time', 'energy']
+    print('\nSS TSPPC results:')
+    for Idx in range(2):
+
+        decompositions = get_decomposition()
+
+
+        if type == 1:
+            N = 5  # audio_based experiment has 5 tasks
+            BranchLoc = [0, 2, 3]  # audio_based experiment has 5 layers
+        else:
+            N = 4  # image_based experiment has 4 tasks
+            BranchLoc = [0, 4, 5]  # image_based experiment has 7 layers
+
+
+        mat = cal_Matrix(N = N, decomposition = decompositions[Idx]) # for SmartSwitch, calculate all datasets once, you need to write all decompositions into the variable 'decompositions'
+
+        CostPerBlock_inference = get_CostPerBlock(CostPerLayer_inference, BranchLoc)
+        CostPerBlock_reload = get_CostPerBlock(CostPerLayer_reload, BranchLoc)
+        # order = [i for i in range(N)]
+
+        cost_history = []
+        order = list(range(N))
+
+        for iter in range(100):
+
+            random.shuffle(order)
+            cost = 0
+            transition = []
+
+            order = list(order)
+
+            # swap task_0 to the first task in the order as task_0 is the precedence constraint of all other tasks
+            order[order.index(0)], order[0] = order[0], order[order.index(0)]
+
+            order_ext = order + [order[0]]  #  we need to append
+
+            for t_curr, t_next in zip(order_ext, order_ext[1:]):
+                SharedDepth = mat[t_curr][t_next]
+                transition.append(SharedDepth)
+                cost += sum(CostPerBlock_inference[Idx][SharedDepth+1:])
+                cost += sum(CostPerBlock_reload[Idx][SharedDepth+1:])
+
+            cost_history.append(cost)
+            # print(iter, order, transition, cost)
+
+        print('{} - {} - min = {}'.format(Idx, overheadtype[Idx], min(cost_history)))
+
+
+
+def calc_SS_TSPCC():
+    '''
+    calculate the overhead results for TSPCC version
+    we impose a precedence constraint which requires task_0 (presence detection) be done before all other tasks
+    '''
+
+    overheadtype = ['time', 'energy']
+    print('\nSS TSPCC results:')
+    for Idx in range(2):
+
+        decompositions = get_decomposition()
+
+
+        if type == 1:
+            N = 5  # audio_based experiment has 5 tasks
+            BranchLoc = [0, 2, 3]  # audio_based experiment has 5 layers
+        else:
+            N = 4  # image_based experiment has 4 tasks
+            BranchLoc = [0, 4, 5]  # image_based experiment has 7 layers
+
+
+        mat = cal_Matrix(N = N, decomposition = decompositions[Idx]) # for SmartSwitch, calculate all datasets once, you need to write all decompositions into the variable 'decompositions'
+
+        CostPerBlock_inference = get_CostPerBlock(CostPerLayer_inference, BranchLoc)
+        CostPerBlock_reload = get_CostPerBlock(CostPerLayer_reload, BranchLoc)
+        # order = [i for i in range(N)]
+
+        cost_history = []
+        order = list(range(N))
+
+        for iter in range(100):
+
+            random.shuffle(order)
+            cost_execute, cost_skip = 0, 0
+            transition = []
+
+            order = list(order)
+
+            # swap task_0 to the first task in the order as task_0 is the precedence constraint of all other tasks
+            order[order.index(0)], order[0] = order[0], order[order.index(0)]
+
+            order_ext = order + [order[0]]  #  we need to append
+
+
+            for t_curr, t_next in zip(order_ext, order_ext[1:]):
+                SharedDepth = mat[t_curr][t_next]
+                transition.append(SharedDepth)
+                cost_execute += sum(CostPerBlock_inference[Idx][SharedDepth+1:])
+                cost_execute += sum(CostPerBlock_reload[Idx][SharedDepth+1:])
+
+            cost_skip = sum(CostPerBlock_inference[Idx])  # for cost_skip case, we only execute task_0 once
+
+            cost_history.append(cost_skip * 0.8 + cost_execute * 0.2)
+            # print(iter, order, transition, cost)
+
+        print('{} - {} - min = {}'.format(Idx, overheadtype[Idx], min(cost_history)))
+
+
 
 
 
 calc_MTL()
 calc_SS()
-
+calc_SS_TSPPC()
+calc_SS_TSPCC()
 
 
