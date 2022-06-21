@@ -34,9 +34,9 @@ for i in range(len(values)):
 
 width_ctr = 1
 
-rects11 = ax.bar(x - 0.6 * width, values[0,:] * 100, width*width_ctr, label='Vanilla',color='#1F77B4', edgecolor='#353337', zorder = 2)
+rects11 = ax.bar(x - 0.6 * width, values[0,:] * 100, width*width_ctr, label='Vanilla',color='#9b9ca0', zorder = 2)
 # rects12 = ax.bar(x              , values[1,:] * 100, width*width_ctr, label='MTL',color='#ffd1a9', edgecolor='#353337', zorder = 2)
-rects13 = ax.bar(x + 0.6 * width, values[2,:] * 100, width*width_ctr, label='Antler',color='#ffd1a9', edgecolor='#353337', zorder = 2)
+rects13 = ax.bar(x + 0.6 * width, values[2,:] * 100, width*width_ctr, label='Antler',color='#935859', zorder = 2)
 
 
 # ax.margins(x=0.01)

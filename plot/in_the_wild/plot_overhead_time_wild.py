@@ -43,11 +43,11 @@ values_image = np.concatenate((values_image, np.asarray(([0, 0]))))
 
 x = np.arange(4)
 
-rects11 = ax.bar(x - 0.6 * width, values_audio, width*width_ctr, label='Audio',color='#1F77B4', edgecolor='#353337', zorder = 2)
-rects12 = ax.bar(x + 0.6 * width, values_image, width*width_ctr, label='Image',color='#ffd1a9', edgecolor='#353337', zorder = 2)
+rects11 = ax.bar(x - 0.6 * width, values_audio, width*width_ctr, label='Audio',color='#9b9ca0', zorder = 2)
+rects12 = ax.bar(x + 0.6 * width, values_image, width*width_ctr, label='Image',color='#935859', zorder = 2)
 
-rects13 = ax.bar(x, array_TSPPC, width*width_ctr, color='#ffd1a9', edgecolor='#353337', zorder = 2)
-rects14 = ax.bar(x, array_TSPCC, width*width_ctr, color='#1F77B4', edgecolor='#353337', zorder = 2)
+rects13 = ax.bar(x, array_TSPPC, width*width_ctr, color='#935859', zorder = 2)
+rects14 = ax.bar(x, array_TSPCC, width*width_ctr, color='#9b9ca0', zorder = 2)
 
 
 

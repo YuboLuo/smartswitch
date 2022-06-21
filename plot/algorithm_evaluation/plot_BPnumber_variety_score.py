@@ -25,9 +25,14 @@ fig, ax = plt.subplots()
 ax.grid(axis='y', linestyle=':', zorder = 0)
 
 
-rects11 = ax.bar(x - 1.5 * width, values[0,:] / values[0,:], width * 1.2, label='#BP=3',color='#ffa352', edgecolor='#353337', zorder = 2)
-rects12 = ax.bar(x              , values[1,:] / values[0,:], width * 1.2, label='#BP=5',color='#629fca', edgecolor='#353337', zorder = 2)
-rects13 = ax.bar(x + 1.5 * width, values[2,:] / values[0,:], width * 1.2, label='#BP=7',color='#ffd1a9', edgecolor='#353337', zorder = 2)
+rects11 = ax.bar(x - 1.5 * width, values[0,:] / values[0,:], width * 1.2, label='#BP=3',color='#5d89a8', zorder = 2)
+rects12 = ax.bar(x              , values[1,:] / values[0,:], width * 1.2, label='#BP=5',color='#64666a', zorder = 2)
+rects13 = ax.bar(x + 1.5 * width, values[2,:] / values[0,:], width * 1.2, label='#BP=7',color='#935859', zorder = 2)
+
+# rects11 = ax.bar(x - 1.5 * width, values[0,:] / values[0,:], width * 1.2, label='#BP=3',color='#5d89a8', edgecolor='#353337', zorder = 2)
+# rects12 = ax.bar(x              , values[1,:] / values[0,:], width * 1.2, label='#BP=5',color='#64666a', edgecolor='#353337', zorder = 2)
+# rects13 = ax.bar(x + 1.5 * width, values[2,:] / values[0,:], width * 1.2, label='#BP=7',color='#935859', edgecolor='#353337', zorder = 2)
+
 
 ax.margins(x=0.01)
 ax.set_xticklabels(datasets)

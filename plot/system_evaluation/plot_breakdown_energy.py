@@ -27,12 +27,12 @@ width_ctr = 0.8
 
 fig, ax = plt.subplots()
 
-rects11 = ax.bar(x - 0.5 * width, values1[:,0], width*width_ctr, color='#629fca', edgecolor='#353337', zorder = 2)
-rects12 = ax.bar(x + 0.5 * width, values2[:,0], width*width_ctr, color='#3F5A8A', edgecolor='#353337', zorder = 2)
+rects11 = ax.bar(x - 0.5 * width, values1[:,0], width*width_ctr, color='#935859', zorder = 2)
+rects12 = ax.bar(x + 0.5 * width, values2[:,0], width*width_ctr, color='#9b9ca0', zorder = 2)
 
 
-rects21 = ax.bar(x - 0.5 * width, values1[:,1], width*width_ctr,hatch='///', label='Switching-MSP',color='#ffd1a9', edgecolor='#353337', zorder = 2, bottom = values1[:,0])
-rects22 = ax.bar(x + 0.5 * width, values2[:,1], width*width_ctr,hatch='///', label='Switching-PR',color='#ffa352', edgecolor='#353337', zorder = 2, bottom = values2[:,0])
+rects21 = ax.bar(x - 0.5 * width, values1[:,1], width*width_ctr,hatch='///', label='Switching-MSP',color='#64666a', zorder = 2, bottom = values1[:,0])
+rects22 = ax.bar(x + 0.5 * width, values2[:,1], width*width_ctr,hatch='///', label='Switching-PR',color='#5d89a8', zorder = 2, bottom = values2[:,0])
 
 ax.grid(axis='y', linestyle=':', zorder = 0)
 
@@ -40,10 +40,10 @@ ax.set_xticklabels(['Vanilla','NWS','Antler'])
 plt.xticks( range(len(x)),fontsize=fontsize, rotation=0)
 plt.yticks( range(0,600,100), fontsize=fontsize)
 
-legend = plt.legend(bbox_to_anchor=(-0.31, 1.04, 1.40, 1), loc=3, shadow=False,mode='expand',ncol=2,fontsize='x-large',frameon=False)
+legend = plt.legend(bbox_to_anchor=(-0.31, 1.07, 1.40, 1), loc=3, shadow=False,mode='expand',ncol=2,fontsize='x-large',frameon=False)
 
 
-plt.ylabel('Energy overhead (s)',fontsize=fontsize)
+plt.ylabel('Energy overhead (mJ)',fontsize=fontsize)
 
 fig.set_size_inches(4, 2.5)
 plt.subplots_adjust(
