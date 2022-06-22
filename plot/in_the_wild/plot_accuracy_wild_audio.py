@@ -39,24 +39,26 @@ rects11 = ax.bar(x - 0.6 * width, values[0,:]*100, width*width_ctr, label='Vanil
 rects13 = ax.bar(x + 0.6 * width, values[2,:]*100, width*width_ctr, label='Antler',color='#935859', zorder = 2)
 
 # ax.margins(x=0.01)
-ax.set_xticklabels(['Presence\ndetection', 'Command\ndetection', 'Person\nidentification', 'Emotion\nclassification', 'Distance\nclassification'])
-plt.xticks( range(len(x)),fontsize=fontsize-2, rotation=90)
+# ax.set_xticklabels(['Presence\ndetection', 'Command\ndetection', 'Speaker\nidentification', 'Emotion\nclassification', 'Distance\nclassification'])
+
+ax.set_xticklabels([r"$\tau_0$", r"$\tau_1$", r"$\tau_2$", r"$\tau_3$", r"$\tau_4$"])
+plt.xticks( range(len(x)),fontsize=fontsize, rotation=0)
 plt.yticks( range(10,101,15), fontsize=fontsize)
 
 
 # bbox_to_anchor = (x0, y0, width, height)
 legend = plt.legend(bbox_to_anchor=(-0.2, 0.92, 1.2, 1), loc=3, shadow=False,mode='expand',ncol=6,fontsize='x-large',frameon=False)
 
-# plt.xlabel('Tasks', fontsize=fontsize)
+plt.xlabel('Tasks', fontsize=fontsize)
 plt.ylabel('Accuracy (%)',fontsize=fontsize)
 
 
 
 
-fig.set_size_inches(3.5, 3)
+fig.set_size_inches(3.5, 2.5)
 plt.subplots_adjust(
     left=0.24,
-    bottom=0.45,
+    bottom=0.22,
     right=0.95,
     top=0.85,
     wspace=0.2,

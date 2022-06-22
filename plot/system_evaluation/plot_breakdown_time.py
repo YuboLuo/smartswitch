@@ -32,7 +32,7 @@ rects12 = ax.bar(x + 0.5 * width, values2[:,0], width*width_ctr, label='Inferenc
 
 
 rects21 = ax.bar(x - 0.5 * width, values1[:,1], width*width_ctr, hatch='///',color='#64666a', zorder = 2, bottom = values1[:,0])
-rects22 = ax.bar(x + 0.5 * width, values2[:,1], width*width_ctr, hatch='///',color='#5d89a8', zorder = 2, bottom = values2[:,0])
+rects22 = ax.bar(x + 0.5 * width, values2[:,1], width*width_ctr, hatch='///',color='#d4d4cb', zorder = 2, bottom = values2[:,0])
 
 ax.grid(axis='y', linestyle=':', zorder = 0)
 
@@ -40,17 +40,17 @@ ax.set_xticklabels(['Vanilla','NWS','Antler'])
 plt.xticks( range(len(x)),fontsize=fontsize, rotation=0)
 plt.yticks( fontsize=fontsize)
 
-legend = plt.legend(bbox_to_anchor=(-0.26, 1.07, 1.34, 1), loc=3, shadow=False,mode='expand',ncol=2,fontsize='x-large',frameon=False)
+legend = plt.legend(bbox_to_anchor=(0.2, 0.9, 1.40, 1), loc=3, shadow=False,mode='expand',ncol=1,fontsize='xx-large',frameon=False)
 
 
 plt.ylabel('Time overhead (s)',fontsize=fontsize)
 
-fig.set_size_inches(4, 2.5)
+fig.set_size_inches(4, 2.8)
 plt.subplots_adjust(
     left=0.17,
     bottom=0.13,
     right=0.97,
-    top=0.78,
+    top=0.76,
     wspace=0.2,
     hspace=0.2,
 )

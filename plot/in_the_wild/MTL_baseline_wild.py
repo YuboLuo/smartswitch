@@ -8,7 +8,7 @@ import pandas as pd
 import random
 
 type = 1  # audio
-type = 0  # image
+# type = 0  # image
 
 print('{}_based experiment'.format(['image','audio'][type]))
 
@@ -296,9 +296,10 @@ def calc_SS_TSPCC():
                 cost_execute += sum(CostPerBlock_reload[Idx][SharedDepth+1:])
 
             cost_skip = sum(CostPerBlock_inference[Idx])  # for cost_skip case, we only execute task_0 once
+            cost = cost_skip * 0.8 + cost_execute * 0.2
 
-            cost_history.append(cost_skip * 0.8 + cost_execute * 0.2)
-            # print(iter, order, transition, cost)
+            cost_history.append(cost)
+            print(iter, order, transition, cost)
 
         print('{} - {} - min = {}'.format(Idx, overheadtype[Idx], min(cost_history)))
 

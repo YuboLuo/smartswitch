@@ -52,7 +52,7 @@ rects14 = ax.bar(x, array_TSPCC, width*width_ctr, color='#9b9ca0', zorder = 2)
 
 
 # ax.margins(x=0.01)
-ax.set_xticklabels(['Vanilla', 'Antler', 'Antler\nTSPPC', 'Antler\nTSPCC'])
+ax.set_xticklabels(['Vanilla', 'Antler', 'Antler\n(PC)', 'Antler\n(CC)'])
 plt.xticks( range(len(x)),fontsize=fontsize-2, rotation=0)
 
 
@@ -62,13 +62,13 @@ plt.yticks([0,2,4,6,8,10], fontsize=fontsize)
 # bbox_to_anchor = (x0, y0, width, height)
 legend = plt.legend(bbox_to_anchor=(-0.2, 0.96, 1.2, 1), loc=3, shadow=False,mode='expand',ncol=2,fontsize='x-large',frameon=False)
 
-plt.ylabel('Time overhead (s)',fontsize=fontsize)
+plt.ylabel('Execution time (s)',fontsize=fontsize)
 
 
-fig.set_size_inches(3.5, 2.6)
+fig.set_size_inches(3.5, 2.8)
 plt.subplots_adjust(
     left=0.23,
-    bottom=0.23,
+    bottom=0.19,
     right=0.96,
     top=0.848,
     wspace=0.2,

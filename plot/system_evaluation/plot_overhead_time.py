@@ -64,10 +64,10 @@ legend = plt.legend(bbox_to_anchor=(-0.09, 0.96, 1.1,1), loc=3, shadow=False,mod
 
 
 # plt.xlabel('Datasets', fontsize=fontsize)
-plt.ylabel('Time overhead (s)',fontsize=fontsize)
+plt.ylabel('Execution Time (s)',fontsize=fontsize)
 
 
-fig.set_size_inches(8, 2.6)
+fig.set_size_inches(8, 2.65)
 plt.subplots_adjust(
     left=0.098,
     bottom=0.16,

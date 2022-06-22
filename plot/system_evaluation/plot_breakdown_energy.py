@@ -32,7 +32,7 @@ rects12 = ax.bar(x + 0.5 * width, values2[:,0], width*width_ctr, color='#9b9ca0'
 
 
 rects21 = ax.bar(x - 0.5 * width, values1[:,1], width*width_ctr,hatch='///', label='Switching-MSP',color='#64666a', zorder = 2, bottom = values1[:,0])
-rects22 = ax.bar(x + 0.5 * width, values2[:,1], width*width_ctr,hatch='///', label='Switching-PR',color='#5d89a8', zorder = 2, bottom = values2[:,0])
+rects22 = ax.bar(x + 0.5 * width, values2[:,1], width*width_ctr,hatch='///', label='Switching-RP',color='#d4d4cb', zorder = 2, bottom = values2[:,0])
 
 ax.grid(axis='y', linestyle=':', zorder = 0)
 
@@ -40,17 +40,17 @@ ax.set_xticklabels(['Vanilla','NWS','Antler'])
 plt.xticks( range(len(x)),fontsize=fontsize, rotation=0)
 plt.yticks( range(0,600,100), fontsize=fontsize)
 
-legend = plt.legend(bbox_to_anchor=(-0.31, 1.07, 1.40, 1), loc=3, shadow=False,mode='expand',ncol=2,fontsize='x-large',frameon=False)
+legend = plt.legend(bbox_to_anchor=(-0.4, 0.9, 1.40, 1), loc=3, shadow=False,mode='expand',ncol=1,fontsize='xx-large',frameon=False)
 
 
-plt.ylabel('Energy overhead (mJ)',fontsize=fontsize)
+plt.ylabel('Energy\nConsumption (mJ)',fontsize=fontsize)
 
-fig.set_size_inches(4, 2.5)
+fig.set_size_inches(4, 2.8)
 plt.subplots_adjust(
-    left=0.20,
+    left=0.27,
     bottom=0.13,
     right=0.97,
-    top=0.78,
+    top=0.76,
     wspace=0.2,
     hspace=0.2,
 )
