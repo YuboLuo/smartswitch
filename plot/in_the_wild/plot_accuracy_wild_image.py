@@ -15,7 +15,7 @@ values = df.values[8:11,1:5]
 x = np.arange(values.shape[1])
 print(values)
 
-fontsize = 14
+fontsize = 15
 linewidth = 2
 width = 0.28
 

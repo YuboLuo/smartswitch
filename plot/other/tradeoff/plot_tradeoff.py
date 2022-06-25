@@ -28,7 +28,7 @@ fig, ax = plt.subplots()
 
 x = np.linspace(0, 1, len(variety_score))
 ax.plot(x, variety_score, 'k--', label='Variety score', linewidth=linewidth)
-ax.plot(x, overhead, 'b', label='Switch overhead', linewidth=linewidth)
+ax.plot(x, overhead, 'b', label='Execution cost', linewidth=linewidth)
 
 
 # # plot the intersection point and a vertical line segment
@@ -42,7 +42,7 @@ plt.xlim([0, 1])
 ax.legend(loc='right', fontsize=fontsize - 2)
 plt.yticks([0.2, 0.4, 0.6, 0.8, 1.0], fontsize=fontsize)
 plt.xticks(fontsize=fontsize)
-plt.ylabel('Normalized task variety score\nand switch overhead', fontsize=fontsize)
+plt.ylabel('Normalized task variety score\nand execution cost', fontsize=fontsize)
 plt.xlabel('Model Size Budget', fontsize=fontsize)
 # plt.title('Normalized Results', fontsize=fontsize)
 

@@ -31,8 +31,8 @@ rects11 = ax.bar(x - 0.5 * width, values1[:,0], width*width_ctr, color='#935859'
 rects12 = ax.bar(x + 0.5 * width, values2[:,0], width*width_ctr, color='#9b9ca0', zorder = 2)
 
 
-rects21 = ax.bar(x - 0.5 * width, values1[:,1], width*width_ctr,hatch='///', label='Switching-MSP',color='#64666a', zorder = 2, bottom = values1[:,0])
-rects22 = ax.bar(x + 0.5 * width, values2[:,1], width*width_ctr,hatch='///', label='Switching-RP',color='#d4d4cb', zorder = 2, bottom = values2[:,0])
+rects21 = ax.bar(x - 0.5 * width, values1[:,1], width*width_ctr,hatch='///', label='Weight-reloading-MSP',color='#64666a', zorder = 2, bottom = values1[:,0])
+rects22 = ax.bar(x + 0.5 * width, values2[:,1], width*width_ctr,hatch='///', label='Weight-reloading-RP',color='#d4d4cb', zorder = 2, bottom = values2[:,0])
 
 ax.grid(axis='y', linestyle=':', zorder = 0)
 
