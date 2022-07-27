@@ -72,9 +72,16 @@ ax = axs[0]
 plt.sca(ax)
 
 ### NE
-rects11 = ax.bar(x - width, NE1, width*width_ratio, label='4-day training ds',color=NE_barcolors[0])
-rects12 = ax.bar(x        , NE2, width*width_ratio, label='7-day training ds',color=NE_barcolors[1])
-rects13 = ax.bar(x + width, NE3, width*width_ratio, label='Upperbound',color=NE_barcolors[2])
+# rects11 = ax.bar(x - width, NE1, width*width_ratio, label='4-day training ds',color=NE_barcolors[0])
+# rects12 = ax.bar(x        , NE2, width*width_ratio, label='7-day training ds',color=NE_barcolors[1])
+# rects13 = ax.bar(x + width, NE3, width*width_ratio, label='Upperbound',color=NE_barcolors[2])
+
+rects11 = ax.bar(x - width*0.5, NE1, width*width_ratio, label='4-day training ds',color=NE_barcolors[1])
+rects12 = ax.bar(x + width*0.5, NE2, width*width_ratio, label='7-day training ds',color=NE_barcolors[2])
+# rects13 = ax.bar(x + width, NE3, width*width_ratio, label='Upperbound',color=NE_barcolors[2])
+
+rects13 = ax.axhline(y = NE3[0], linestyle=':',   linewidth=2, color='g', label='Upperbound',zorder=0)
+
 
 ax.set_xticklabels(['2','4','6','8'])
 plt.xticks( range(1,5),fontsize=fontsize, rotation=0)
@@ -83,7 +90,7 @@ plt.yticks([0, 0.5, 1.0, 1.5, 2.0, 2.5], fontsize=fontsize)
 
 # ax.get_xaxis().set_ticks([]) # hidexticks
 plt.xlabel('Number of embedding split', fontsize=fontsize)
-plt.ylabel('NE Drop (%)',fontsize=fontsize)
+plt.ylabel('Eval NE Drop (%)',fontsize=fontsize)
 
 
 
@@ -96,9 +103,12 @@ legend = plt.legend(bbox_to_anchor=(0, 0.9, 1., 1), loc=3, shadow=False,mode='ex
 
 
 ## show value above the bar
-autolabel_float(rects11, ax)
-autolabel_float(rects12, ax)
-autolabel_float(rects13, ax)
+shift = 0.1
+autolabel_float(rects11, ax, shift)
+autolabel_float(rects12, ax, shift)
+# autolabel_float(rects13, ax)
+plt.annotate('{}'.format(NE3[0]), xy=(1, NE3[0]-0.1), xytext=(3, 0), xycoords=('axes fraction', 'data'), textcoords='offset points',fontsize=fontsize-3)
+
 
 
 
@@ -110,9 +120,10 @@ plt.sca(ax)
 
 
 ### for energy efficiency, we only have binary results
-rects21 = ax.bar(x - width, AUC1, width*width_ratio, label='4-day training ds',color=AUC_barcolors[0])
-rects22 = ax.bar(x        , AUC2, width*width_ratio, label='7-day training ds',color=AUC_barcolors[1])
-rects23 = ax.bar(x + width, AUC3, width*width_ratio, label='Upperbound',color=AUC_barcolors[2])
+rects21 = ax.bar(x - width*0.5, AUC1, width*width_ratio, label='4-day training ds',color=AUC_barcolors[1])
+rects22 = ax.bar(x + width*0.5, AUC2, width*width_ratio, label='7-day training ds',color=AUC_barcolors[2])
+# rects23 = ax.bar(x + width, AUC3, width*width_ratio, label='Upperbound',color=AUC_barcolors[2])
+rects13 = ax.axhline(y = AUC3[0], linestyle=':',   linewidth=2, color='g', label='Upperbound',zorder=0)
 
 
 ax.set_xticklabels(['2','4','6','8'])
@@ -122,14 +133,16 @@ plt.yticks(fontsize=fontsize)
 
 
 plt.xlabel('Number of embedding split', fontsize=fontsize)
-plt.ylabel('AUC Gain(%)', fontsize=fontsize)
+plt.ylabel('Eval AUC Gain(%)', fontsize=fontsize)
 # plt.title('(b) ', fontsize=fontsize, y=1.08)
 
 
 ## show value above the bar
-autolabel_float(rects21, ax, 0.3)
-autolabel_float(rects22, ax)
-autolabel_float(rects23, ax)
+shift = 0.05
+autolabel_float(rects21, ax, shift)
+autolabel_float(rects22, ax, shift)
+# autolabel_float(rects23, ax)
+plt.annotate('{}'.format(AUC3[0]), xy=(1, AUC3[0]-0.1), xytext=(3, 0), xycoords=('axes fraction', 'data'), textcoords='offset points',fontsize=fontsize-3)
 
 
 ### put legend above the figure
@@ -143,7 +156,7 @@ plt.subplots_adjust(
 top=0.94,
 bottom=0.115,
 left=0.1,
-right=0.963,
+right=0.943,
 hspace=0.752,
 wspace=0.2
 )
