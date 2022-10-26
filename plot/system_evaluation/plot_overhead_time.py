@@ -5,7 +5,7 @@ import pandas as pd
 
 
 board = 'msp'
-board = 'pico'
+board = 'portenta'
 
 # To open Workbook
 file = "comparison.xlsx"
@@ -41,14 +41,6 @@ rects14 = ax.bar(x + 0.5 * width, values[3,:], width*width_ctr, label='Vanilla',
 rects16 = ax.bar(x + 1.5 * width, values[5,:], width*width_ctr, label='Antler',color='#5d89a8', zorder = 2)
 
 
-# rects11 = ax.bar(x - 2.5 * width, values[2,:], width*width_ctr, label='YONO',color='#d4d4cb', edgecolor='#353337', zorder = 2)
-# rects12 = ax.bar(x - 1.5 * width, values[1,:], width*width_ctr, label='NWS',color='#9b9ca0', edgecolor='#353337', zorder = 2)
-# rects13 = ax.bar(x - 0.5 * width, values[0,:], width*width_ctr, label='NWV',color='#935859', edgecolor='#353337', zorder = 2)
-# rects14 = ax.bar(x + 0.5 * width, values[3,:], width*width_ctr, label='Vanilla',color='#64666a', edgecolor='#353337', zorder = 2)
-# # rects15 = ax.bar(x + 1.5 * width, values[4,:], width*width_ctr, label='MTL',color='#3F5A8A', edgecolor='#353337', zorder = 2)
-# rects16 = ax.bar(x + 1.5 * width, values[5,:], width*width_ctr, label='Antler',color='#5d89a8', edgecolor='#353337', zorder = 2)
-
-
 ax.margins(x=0.01)
 ax.set_xticklabels(datasets)
 plt.xticks( range(len(x)),fontsize=fontsize, rotation=0)
@@ -56,7 +48,8 @@ plt.xticks( range(len(x)),fontsize=fontsize, rotation=0)
 if board == 'msp':
     plt.yticks([0,20,40,60,80,100,120], fontsize=fontsize)
 else:
-    plt.yticks([0,3,6,9,12,15,18], fontsize=fontsize)
+    plt.yticks(fontsize=fontsize)
+    # plt.yticks([0, 3, 6, 9, 12, 15, 18], fontsize=fontsize)
 
 
 # bbox_to_anchor = (x0, y0, width, height)

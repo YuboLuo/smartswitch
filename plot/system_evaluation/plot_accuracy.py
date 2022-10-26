@@ -42,14 +42,6 @@ rects14 = ax.bar(x + 0.5 * width, values[3,:], width*width_ctr, label='Vanilla',
 rects16 = ax.bar(x + 1.5 * width, values[5,:], width*width_ctr, label='Antler',color='#5d89a8', zorder = 2)
 
 
-# rects11 = ax.bar(x - 2.5 * width, values[2,:], width*width_ctr, label='YONO',color='#1F77B4', edgecolor='#353337', zorder = 2)
-# rects12 = ax.bar(x - 1.5 * width, values[1,:], width*width_ctr, label='NWS',color='#ffd1a9', edgecolor='#353337', zorder = 2)
-# rects13 = ax.bar(x - 0.5 * width, values[0,:], width*width_ctr, label='NWV',color='#629fca', edgecolor='#353337', zorder = 2)
-# rects14 = ax.bar(x + 0.5 * width, values[3,:], width*width_ctr, label='Vanilla',color='#ffa352', edgecolor='#353337', zorder = 2)
-# # rects15 = ax.bar(x + 1.5 * width, values[4,:], width*width_ctr, label='MTL',color='#3F5A8A', edgecolor='#353337', zorder = 2)
-# rects16 = ax.bar(x + 1.5 * width, values[5,:], width*width_ctr, label='Antler',color='#8c0000', edgecolor='#353337', zorder = 2)
-
-
 
 ax.margins(x=0.01)
 ax.set_xticklabels(datasets)
