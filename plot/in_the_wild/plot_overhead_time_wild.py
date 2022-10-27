@@ -55,8 +55,10 @@ rects14 = ax.bar(x, array_TSPCC, width*width_ctr, color='#9b9ca0', zorder = 2)
 ax.set_xticklabels(['Vanilla', 'Antler', 'Antler\n(PC)', 'Antler\n(CC)'])
 plt.xticks( range(len(x)),fontsize=fontsize-2, rotation=0)
 
+plt.yscale("log")
+plt.yticks(fontsize=fontsize)
+# plt.yticks([0,2,4,6,8,10], fontsize=fontsize)
 
-plt.yticks([0,2,4,6,8,10], fontsize=fontsize)
 
 
 # bbox_to_anchor = (x0, y0, width, height)
@@ -67,7 +69,7 @@ plt.ylabel('Execution time (s)',fontsize=fontsize)
 
 fig.set_size_inches(3.5, 2.8)
 plt.subplots_adjust(
-    left=0.23,
+    left=0.25,
     bottom=0.19,
     right=0.96,
     top=0.848,

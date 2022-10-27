@@ -54,7 +54,7 @@ ax.set_xticklabels(['Vanilla', 'Antler', 'Antler\n(PC)', 'Antler\n(CC)'])
 plt.xticks( range(len(x)),fontsize=fontsize-2, rotation=0)
 
 
-plt.yticks([0,20,40,60,80,100,120], fontsize=fontsize)
+plt.yticks([0,20,40,60,80], fontsize=fontsize)
 
 
 # bbox_to_anchor = (x0, y0, width, height)

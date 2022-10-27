@@ -32,8 +32,8 @@ ax.grid(axis='y', linestyle=':', zorder = 0)
 
 width_ctr = 0.8
 
-
-rects11 = ax.bar(x - 2.5 * width, values[2,:], width*width_ctr, label='YONO',color='#d4d4cb', zorder = 2)
+if board == 'portenta':  # we only plot YONO for 32-bit portenta
+    rects11 = ax.bar(x - 2.5 * width, values[2,:], width*width_ctr, label='YONO',color='#d4d4cb', zorder = 2)
 rects12 = ax.bar(x - 1.5 * width, values[1,:], width*width_ctr, label='NWS',color='#9b9ca0', zorder = 2)
 rects13 = ax.bar(x - 0.5 * width, values[0,:], width*width_ctr, label='NWV',color='#935859', zorder = 2)
 rects14 = ax.bar(x + 0.5 * width, values[3,:], width*width_ctr, label='Vanilla',color='#64666a', zorder = 2)
