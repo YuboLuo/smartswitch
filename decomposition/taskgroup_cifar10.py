@@ -327,16 +327,16 @@ def optimalTree(queue):
 
 ###############################
 
-# # for debug, we pre-train all single models in advance
-# # so that we do not need train them every time
-# for i in range(1):
-#     model_train(train=True, chosenType=i)
+# for debug, we pre-train all single models in advance
+# so that we do not need train them every time
+for i in range(1):
+    model_train(train=True, chosenType=i)
 
-# # for debug, we calculate RSM once and save it
-# # so that we do not need to recompute every time
-# rsm = RSM_Calc(50)
-# np.save('rsm.npy', rsm)
-# RSM = np.load('rsm.npy')
+# for debug, we calculate RSM once and save it
+# so that we do not need to recompute every time
+rsm = RSM_Calc(50)
+np.save('rsm.npy', rsm)
+RSM = np.load('rsm.npy')
 
 RSM = np.load('rsm.npy')
 queue = clustering(RSM)

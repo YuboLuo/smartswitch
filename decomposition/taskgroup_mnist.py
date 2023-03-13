@@ -1093,17 +1093,17 @@ def findLocactionOfBP(N=7, LayerNum=5, BranchNum=3):
 ########################### program execution entry ############################
 
 
-# # for debug, we pre-train all single models in advance
-# # so that we do not need train them every time
-# for i in range(10):
-#     model_train(train=True, chosenType=i)
+# for debug, we pre-train all single models in advance
+# so that we do not need train them every time
+for i in range(10):
+    model_train(train=True, chosenType=i)
 
 
-# # for debug, we calculate RSM once and save it
-# # so that we do not need to recompute every time
-# rsm = RSM_Calc(50)
-# np.save('rsm.npy', rsm)
-# print('RSM saved...')
+# for debug, we calculate RSM once and save it
+# so that we do not need to recompute every time
+rsm = RSM_Calc(50)
+np.save('rsm.npy', rsm)
+print('RSM saved...')
 
 
 RSM = np.load('rsm.npy')
