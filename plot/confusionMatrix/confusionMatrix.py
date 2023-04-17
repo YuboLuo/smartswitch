@@ -38,12 +38,12 @@ def quantization(array):
 
 
 ########
-# dataset = 'cifar10'
-dataset = 'mnist'
+dataset = 'cifar10'
+# dataset = 'mnist'
 
 if dataset == 'cifar10':
     # best match - cifar10: net1-6, net2-3, net3-7
-    files = [{'net': 1, 'rsm': 3}, {'net': 2, 'rsm': 2}, {'net': 3, 'rsm': 5}]
+    files = [{'net': 1, 'rsm': 1}, {'net': 2, 'rsm': 1}, {'net': 3, 'rsm': 1}]
 else:
     # best match - mnist: net1-8, net2-8, net3-1
     files = [{'net': 1, 'rsm': 6}, {'net': 2, 'rsm': 8}, {'net': 3, 'rsm': 7}]
@@ -53,7 +53,7 @@ arrays = []
 vmin, vmax = 1, -1
 for i in range(3):
     n_net, n_rsm = files[i]['net'], files[i]['rsm']
-    rsm = np.load('RSM/{}_net{}_rsm{}.npy'.format(dataset, n_net, n_rsm))
+    rsm = np.load('RSM_joint/epoch10/{}_net{}_rsm{}.npy'.format(dataset, n_net, n_rsm))
     array = np.mean(rsm, axis=0)
     array = array[:5,:5]
     arrays.append(array)
@@ -62,7 +62,7 @@ for i in range(3):
     vmax = max(vmax, array.max())
 
     # quantize array
-    quantization(array)
+    # quantization(array)
 
 print('vmax = {}\nvmin = {}'.format(vmax, vmin))
 
@@ -76,7 +76,7 @@ for i in range(num):
     array = arrays[i]
 
     df_cm = pd.DataFrame(array, range(len(array)), range(len(array)))
-    sn.heatmap(df_cm, vmin=0, vmax=1, cbar=False, cmap=cmap)
+    sn.heatmap(df_cm, vmin=0, vmax=1, cbar=False, cmap='crest') # cmap = cmap
 
     if i == 0:
         plt.ylabel('Tasks', fontsize=fontsize)

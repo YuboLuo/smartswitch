@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sn
 import pandas as pd
-import matplotlib
 
 # colors = ["#90AFC5", "#336B87", "#2a3132", "#763626"]
 # colors = ["#EBF5FB","#D6EAF8","#AED6F1","#85C1E9","#5DADE2","#5DADE2","#3498DB","#2E86C1","#2874A6"]

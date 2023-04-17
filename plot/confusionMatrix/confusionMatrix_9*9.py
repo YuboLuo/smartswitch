@@ -43,7 +43,7 @@ dataset = 'cifar10'
 # dataset = 'mnist'
 
 
-net = 1
+net = 3
 nets = [net] * 9
 rsms = [i for i in range(1, 10)]
 files = [{'net': nets[0], 'rsm': rsms[0]}, {'net': nets[1], 'rsm': rsms[1]}, {'net': nets[2], 'rsm': rsms[2]},
@@ -56,7 +56,12 @@ vmin, vmax = 1, -1
 for i in range(9):
     n_net, n_rsm = files[i]['net'], files[i]['rsm']
     rsm = np.load('RSM/{}_net{}_rsm{}.npy'.format(dataset, n_net, n_rsm))
-    array = np.mean(rsm, axis=0)
+
+    if net == 3:
+        rsm = rsm[[1, 3, 5], :, :]
+    else:
+        rsm = rsm[[0,2,3],:,:]
+
     array = np.mean(rsm, axis=0)
     array = array[:5,:5]
     arrays.append(array)
