@@ -38,15 +38,14 @@ rects11 = ax.bar(x - 2.5 * width, values[2,:], width*width_ctr, label='YONO',col
 rects12 = ax.bar(x - 1.5 * width, values[1,:], width*width_ctr, label='NWS',color='#9b9ca0', zorder = 2)
 rects13 = ax.bar(x - 0.5 * width, values[0,:], width*width_ctr, label='NWV',color='#935859', zorder = 2)
 rects14 = ax.bar(x + 0.5 * width, values[3,:], width*width_ctr, label='Vanilla',color='#64666a', zorder = 2)
-# rects15 = ax.bar(x + 1.5 * width, values[4,:], width*width_ctr, label='MTL',color='#3F5A8A', zorder = 2)
-rects16 = ax.bar(x + 1.5 * width, values[5,:], width*width_ctr, label='Antler',color='#5d89a8', zorder = 2)
+rects16 = ax.bar(x + 1.5 * width, values[4,:], width*width_ctr, label='Antler',color='#5d89a8', zorder = 2)
 
 
 
 ax.margins(x=0.01)
 ax.set_xticklabels(datasets)
 plt.xticks( range(len(x)),fontsize=fontsize, rotation=0)
-plt.yticks( fontsize=fontsize)
+plt.yticks( [15,30,45,60,75,90,100],fontsize=fontsize)
 
 
 # bbox_to_anchor = (x0, y0, width, height)
@@ -61,7 +60,7 @@ fig.set_size_inches(8, 2.6)
 plt.subplots_adjust(
     left=0.099,
     bottom=0.16,
-    right=0.992,
+    right=0.962,
     top=0.85,
     wspace=0.2,
     hspace=0.2,
