@@ -1,4 +1,12 @@
 
+'''
+RSM: Representation Similarity Matrix
+
+RSM data is generated from the following code
+https://colab.research.google.com/drive/1X_oghRsap7E2dO_qT1civMLqdD76y6nu?usp=sharing
+'''
+
+
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sn
@@ -12,7 +20,7 @@ dataset = 'cifar10'
 # dataset = 'mnist'
 
 
-net = 3
+net = 2
 nets = [net] * 10
 ratio = [i*0.1 for i in range(1, 11)]
 n_task = 10
@@ -43,7 +51,7 @@ for i in range(9):
 
 
 runs = 9
-length = 9
+length = 10
 distance_m = np.zeros((runs, length))
 for run in range(runs):
     for j in range(length):
@@ -56,6 +64,8 @@ distance = distance/3
 
 x = [i*0.1 for i in range(1, length+1)]
 plt.plot(x, distance)
+plt.xlabel('Ratio')
+plt.ylabel('Matrix Distance')
 plt.show()
 
 
