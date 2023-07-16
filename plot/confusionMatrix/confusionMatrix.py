@@ -68,6 +68,7 @@ print('vmax = {}\nvmin = {}'.format(vmax, vmin))
 
 fontsize = 18
 num = len(arrays)
+Nets = ['6Layer', '6Layer', '8Layer']
 
 fig, axs = plt.subplots(ncols=num + 1, gridspec_kw=dict(width_ratios=[1,1,1,0.1]))
 for i in range(num):
@@ -85,7 +86,7 @@ for i in range(num):
         axs[i].axes.get_yaxis().set_visible(False)
 
     plt.xlabel('Tasks', fontsize=fontsize)
-    plt.title('Net{}'.format(i+1), fontsize=fontsize)
+    plt.title('Net{}_{}'.format(i+1, Nets[i]), fontsize=fontsize)
     plt.xticks( fontsize=fontsize)
 
 # plot the color bar in the last axs
@@ -105,5 +106,5 @@ plt.subplots_adjust(
     hspace=0.2,
 )
 fig.show()
-fig.savefig("ConfusionMatrix_{}.pdf".format(dataset))
+fig.savefig("confusionMatrix_{}.pdf".format(dataset))
 

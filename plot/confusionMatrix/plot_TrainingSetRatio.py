@@ -62,12 +62,34 @@ distance = distance/3
 
 
 
+fontsize = 15
+linewidth = 2
+
+
 x = [i*0.1 for i in range(1, length+1)]
-plt.plot(x, distance)
-plt.xlabel('Ratio')
-plt.ylabel('Matrix Distance')
-plt.show()
 
+fig, ax = plt.subplots()
+ax.plot(x, distance, linewidth=linewidth)
 
+plt.xticks(fontsize=fontsize)
+plt.yticks(fontsize=fontsize)
 
+plt.xlabel('Ratio of used dataset', fontsize=fontsize)
+plt.ylabel('Distance to using\nfull dataset', fontsize=fontsize)
+
+plt.grid()
+# plt.xscale("log")
+
+fig.set_size_inches(4, 2.5)
+plt.subplots_adjust(
+    left=0.24,
+    bottom=0.22,
+    right=0.951,
+    top=0.9,
+    wspace=1,
+    hspace=0.5,
+)
+
+fig.show()
+fig.savefig("train_ratio.pdf")
 
